@@ -1855,7 +1855,9 @@ const server = http.createServer(async (req, res) => {
                 let downloadUrl = release.html_url || '';
                 if (release.assets && release.assets.length > 0) {
                   const exeAsset = release.assets.find(a => a.name.endsWith('.exe') && a.name.includes('Setup'));
+                  const zipAsset = release.assets.find(a => a.name.endsWith('.zip'));
                   if (exeAsset) downloadUrl = exeAsset.browser_download_url;
+                  else if (zipAsset) downloadUrl = zipAsset.browser_download_url;
                 }
                 resolve({
                   currentVersion,
