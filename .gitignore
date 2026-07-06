@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-build/
+dist-new/
+release/
+.cache/
+.uploads/
+*.log
+*.asar
+.DS_Store
+Thumbs.db
+sf-build/
+__pycache__/
+.trae-cn/
+data/
+projects/

@@ -1,0 +1,58 @@
+{
+  "name": "storyforge-ai",
+  "version": "3.1.2",
+  "description": "StoryForge AI - 基于Mx-Shell提示词模板体系的AI短剧创作Agent",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir"
+  },
+  "author": "StoryForge AI",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.35.3",
+    "to-ico": "^1.1.5"
+  },
+  "build": {
+    "appId": "com.storyforge-ai.app",
+    "productName": "StoryForge AI",
+    "icon": "build/icon.ico",
+    "afterPack": "scripts/afterPack.js",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "public/**/*",
+      "skills/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StoryForge AI",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "artifactName": "StoryForge AI-Setup-${version}.exe"
+    }
+  }
+}
