@@ -662,6 +662,89 @@ async function executeToolCalls(calls, config) {
           /* question工具不在服务端执行，仅返回确认 */
           result = { ok: true, message: '已发送问题给用户', question: call.args.question, options: call.args.options };
           break;
+        case 'fs_list': {
+          const targetPath = call.args.path || call.args.directory;
+          const validated = validatePath(targetPath);
+          if (!validated) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          if (fs.existsSync(validated)) {
+            const entries = fs.readdirSync(validated).map(e => {
+              const fullPath = path.join(validated, e);
+              const stat = fs.statSync(fullPath);
+              return { name: e, type: stat.isDirectory() ? 'dir' : 'file', size: stat.size, modified: stat.mtime.toISOString() };
+            });
+            result = { ok: true, files: entries };
+          } else {
+            result = { ok: false, message: '目录不存在: ' + targetPath };
+          }
+          break;
+        }
+        case 'fs_read': {
+          const validated = validatePath(call.args.path);
+          if (!validated) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          if (fs.existsSync(validated) && fs.statSync(validated).isFile()) {
+            const maxSize = 500000; // 500KB limit
+            const stat = fs.statSync(validated);
+            if (stat.size > maxSize) { result = { ok: false, message: '文件过大（最大500KB）' }; break; }
+            result = { ok: true, content: fs.readFileSync(validated, 'utf-8') };
+          } else {
+            result = { ok: false, message: '文件不存在' };
+          }
+          break;
+        }
+        case 'fs_write': {
+          const validated = validatePath(call.args.path);
+          if (!validated) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          const dir = path.dirname(validated);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(validated, call.args.content || '', 'utf-8');
+          result = { ok: true, message: '文件已写入: ' + call.args.path };
+          break;
+        }
+        case 'fs_delete': {
+          const validated = validatePath(call.args.path);
+          if (!validated) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          if (fs.existsSync(validated)) {
+            const stat = fs.statSync(validated);
+            if (stat.isDirectory()) fs.rmSync(validated, { recursive: true });
+            else fs.unlinkSync(validated);
+            result = { ok: true, message: '已删除: ' + call.args.path };
+          } else {
+            result = { ok: false, message: '文件不存在' };
+          }
+          break;
+        }
+        case 'fs_search': {
+          const dir = validatePath(call.args.directory || call.args.path);
+          if (!dir) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          const pattern = call.args.pattern || '*';
+          const simpleRe = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.');
+          const re = new RegExp('^' + simpleRe + '$');
+          const found = [];
+          function searchDir(d) {
+            try {
+              fs.readdirSync(d).forEach(e => {
+                const full = path.join(d, e);
+                const stat = fs.statSync(full);
+                if (stat.isDirectory()) searchDir(full);
+                else if (re.test(e)) found.push(path.relative(dir, full));
+              });
+            } catch(err) {}
+          }
+          searchDir(dir);
+          result = { ok: true, files: found.slice(0, 50) }; // limit results
+          break;
+        }
+        case 'fs_info': {
+          const validated = validatePath(call.args.path);
+          if (!validated) { result = { ok: false, message: '路径不在允许的工作区域内' }; break; }
+          if (fs.existsSync(validated)) {
+            const stat = fs.statSync(validated);
+            result = { ok: true, info: { name: path.basename(validated), type: stat.isDirectory() ? 'dir' : 'file', size: stat.size, modified: stat.mtime.toISOString() } };
+          } else {
+            result = { ok: false, message: '路径不存在' };
+          }
+          break;
+        }
         default:
           result = { ok: false, message: `未知工具: ${call.name}` };
       }

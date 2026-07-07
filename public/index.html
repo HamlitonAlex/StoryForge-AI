@@ -1299,6 +1299,13 @@ a{color:var(--accent);text-decoration:none}
         </div>
         <div class="upload-preview" id="welcomeUploadPreview" style="display:none"></div>
         <p class="welcome-hint">Enter 发送 / Shift+Enter 换行</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px">
+          <span style="font-size:12px;color:var(--muted)">当前模型:</span>
+          <span id="welcomeModelName" style="font-size:12px;color:var(--text);cursor:pointer;border-bottom:1px dashed var(--muted);padding-bottom:1px" onclick="switchToSettingsTab('model')">未配置</span>
+          <button onclick="switchToSettingsTab('model')" style="border:none;background:none;color:var(--muted);cursor:pointer;padding:2px" title="配置模型">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
     <!-- 会话区 -->
@@ -2857,7 +2864,7 @@ function doSendMessage(msg) {
       mc.appendChild(typing); mc.scrollTop = mc.scrollHeight;
     }
     var assistantContent = '';
-    var tcContainer = document.getElementById('toolCallsContainer');
+    var tcContainer = null; // tool calls shown inline in message
     streamAbortController = new AbortController();
     fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2882,25 +2889,45 @@ function doSendMessage(msg) {
             try {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
-              if (data.type === 'tool_calls' && tcContainer) {
-                tcContainer.innerHTML = '';
-                var tc = document.createElement('div'); tc.className = 'tool-call-item';
-                tc.innerHTML = '<div class="tool-call-name">' + escapeHtml(data.name || '工具调用') + '</div><div class="tool-call-status running">执行中...</div>';
-                tcContainer.appendChild(tc); addLog('工具调用: ' + data.name);
-                /* 检查是否有question工具调用，渲染为选项按钮 */
-                if (data.calls && Array.isArray(data.calls)) {
-                  for (var ci = 0; ci < data.calls.length; ci++) {
-                    var call = data.calls[ci];
+              if (data.type === 'tool_calls' && data.calls) {
+                // Show tool calls inline in the chat
+                var msgBody = typing.querySelector('.message-body');
+                if (msgBody) {
+                  var toolDiv = document.createElement('div');
+                  toolDiv.className = 'tool-calls-inline';
+                  toolDiv.style.cssText = 'margin-top:8px;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:8px;font-size:12px';
+                  data.calls.forEach(function(call) {
+                    var item = document.createElement('div');
+                    item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0';
+                    item.innerHTML = '<span style="color:var(--muted)">🔧</span><span style="color:var(--text)">' + escapeHtml(call.name || '工具调用') + '</span><span class="tool-call-status" style="color:var(--muted);font-size:11px">执行中...</span>';
+                    toolDiv.appendChild(item);
+                    // Handle question tool inline
                     if (call.name === 'question' && call.args && call.args.options) {
                       renderQuestionButtons(call.args.question, call.args.options);
                     }
-                  }
+                  });
+                  msgBody.appendChild(toolDiv);
+                }
+                addLog('工具调用: ' + (data.calls.map(c => c.name).join(', ')));
+              }
+              if (data.type === 'tool_results') {
+                // Update inline tool status
+                var toolItems = document.querySelectorAll('.tool-calls-inline .tool-call-status');
+                toolItems.forEach(function(st) { st.textContent = '完成'; st.style.color = '#2ea44f'; });
+                // Also update sidebar tool log
+                var sidebar = document.getElementById('toolCallsContainer');
+                if (sidebar) {
+                  var logDiv = document.createElement('div');
+                  logDiv.style.cssText = 'padding:4px 0;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)';
+                  logDiv.textContent = '工具执行完成: ' + (data.results || []).map(function(r) { return r.name + ':' + (r.result && r.result.ok ? '成功' : '失败'); }).join(', ');
+                  sidebar.appendChild(logDiv);
                 }
               }
-              if (data.type === 'tool_results' && tcContainer) {
-                var items = tcContainer.querySelectorAll('.tool-call-item');
-                var last = items[items.length - 1];
-                if (last) { var st = last.querySelector('.tool-call-status'); if (st) { st.className = 'tool-call-status done'; st.textContent = '完成'; } }
+              if (data.type === 'tool_error') {
+                var toolItems = document.querySelectorAll('.tool-calls-inline .tool-call-status');
+                toolItems.forEach(function(st) { st.textContent = '失败'; st.style.color = '#d32f2f'; });
+                assistantContent += '\n\n⚠️ 工具执行失败: ' + (data.error || '未知错误');
+                updateStreamMessage(assistantContent);
               }
               if (data.type === 'error') {
                 assistantContent = '';
@@ -3694,6 +3721,8 @@ function loadConfig() {
       addLog('配置已加载');
       var mm = document.getElementById('chatModelName');
       if (mm) mm.textContent = config.model_name || config.model || '模型未配置';
+      var welcomeModel = document.getElementById('welcomeModelName');
+      if (welcomeModel) welcomeModel.textContent = config.model_name || config.model || '未配置';
     })
     .catch(function (e) { addLog('加载配置失败: ' + e.message); });
 }
@@ -3734,6 +3763,8 @@ function saveConfig() {
       addLog('配置已保存');
       var meta = document.getElementById('chatModelName');
       if (meta) meta.textContent = config.model_name || config.model || '模型未配置';
+      var welcomeModel = document.getElementById('welcomeModelName');
+      if (welcomeModel) welcomeModel.textContent = config.model_name || config.model || '未配置';
       var btn = document.querySelector('.save-btn');
       if (btn) { btn.disabled = false; btn.textContent = '已保存'; setTimeout(function(){ btn.textContent = '保存设置'; }, 1500); }
     }).catch(function (e) {
