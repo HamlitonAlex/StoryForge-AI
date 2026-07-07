@@ -1549,6 +1549,7 @@ var projectsViewInited = false;
 var settingsViewInited = false;
 var sendingMessage = false;
 var streamAbortController = null;
+var _generationSessionId = null; // 用于追踪当前生成属于哪个对话
 var openTabs = [];
 var skillsList = [];
 var previewImageList = [];
@@ -2618,6 +2619,12 @@ function closeTab(convId) {
 
 function switchTab(convId) {
   if (isGenerating && streamAbortController) streamAbortController.abort();
+  isGenerating = false;
+  _generationSessionId = null;
+  var typing = document.getElementById('typingIndicator');
+  if (typing) typing.remove();
+  var sendBtn = document.getElementById('sendBtn');
+  if (sendBtn) sendBtn.disabled = false;
   currentConversationId = convId;
   chatHistory = [];
   renderTabs();
@@ -2952,6 +2959,7 @@ function doSendMessage(msg) {
     var ta = document.getElementById('chatTextarea');
     if (ta) { ta.value = ''; ta.style.height = 'auto'; }
     isGenerating = true;
+    _generationSessionId = currentConversationId;
     var sendBtn = document.getElementById('sendBtn');
     if (sendBtn) sendBtn.disabled = true;
     var mc = document.getElementById('chatMessages');
@@ -3094,6 +3102,8 @@ function doSendMessage(msg) {
 }
 
 function updateStreamMessage(content) {
+  // 如果用户已切换对话，不再更新
+  if (_generationSessionId && _generationSessionId !== currentConversationId) return;
   var mc = document.getElementById('chatMessages');
   var typing = document.getElementById('typingIndicator');
   if (!typing) return;
@@ -3114,6 +3124,12 @@ function finishGeneration(content) {
   if (sendBtn) sendBtn.disabled = false;
   var typing = document.getElementById('typingIndicator');
   if (typing) typing.remove();
+  // 如果用户已切换到其他对话，丢弃结果
+  if (_generationSessionId && _generationSessionId !== currentConversationId) {
+    _generationSessionId = null;
+    return;
+  }
+  _generationSessionId = null;
   if (content) {
     var cleanContent = content.trim();
     if (cleanContent) chatHistory.push({ role: 'assistant', content: cleanContent });
@@ -3170,8 +3186,9 @@ function continueGeneration(btn) {
   btn.disabled = true;
   btn.innerHTML = '<span>生成中...</span>';
   isGenerating = true;
-  var sendBtn = document.getElementById('sendBtn');
-  if (sendBtn) sendBtn.disabled = true;
+    _generationSessionId = currentConversationId;
+    var sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) sendBtn.disabled = true;
   /* 构建继续消息 */
   var continueMsg = '请继续上文内容，不要重复之前已生成的内容。';
   var fetchBody = {
