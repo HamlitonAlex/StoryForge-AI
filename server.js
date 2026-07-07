@@ -1837,6 +1837,7 @@ const server = http.createServer(async (req, res) => {
             path: '/repos/' + owner + '/' + repo + '/releases/latest',
             method: 'GET',
             timeout: 6000,
+            rejectUnauthorized: false,
             headers: { 'User-Agent': 'StoryForge-AI-UpdateChecker', 'Accept': 'application/vnd.github.v3+json' }
           };
           const req = https.request(options, (response) => {

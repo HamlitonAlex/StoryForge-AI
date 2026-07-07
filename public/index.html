@@ -3097,7 +3097,7 @@ function toggleThemeFromSettings(isDark) {
 }
 
 /* ===== 云端更新功能 ===== */
-var appVersion = (typeof appVersion !== 'undefined') ? appVersion : '3.1.2';
+var appVersion = (typeof appVersion !== 'undefined') ? appVersion : '3.2.0';
 
 function saveAutoUpdateSetting(enabled) {
   try { localStorage.setItem('sf-auto-update', enabled ? '1' : '0'); } catch(e) {}
@@ -3115,7 +3115,10 @@ function checkForUpdate() {
   fetch('/api/update/check')
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      if (d.updateAvailable) {
+      if (d.error) {
+        status.textContent = '检查失败: ' + d.error;
+        status.style.color = '#d32f2f';
+      } else if (d.updateAvailable) {
         status.textContent = '发现新版本 v' + d.latestVersion + '!';
         status.style.color = 'var(--msg-user, #0969da)';
         if (d.downloadUrl) {
