@@ -2979,7 +2979,7 @@ function doSendMessage(msg) {
             var line = lines[i];
             if (!line.startsWith('data: ')) continue;
             var dataStr = line.slice(6).trim();
-            if (dataStr === '[DONE]') continue;
+            if (dataStr === '[DONE]') { finishGeneration(assistantContent); return; }
             try {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
@@ -2989,25 +2989,48 @@ function doSendMessage(msg) {
                 if (msgBody) {
                   var toolDiv = document.createElement('div');
                   toolDiv.className = 'tool-calls-inline';
-                  toolDiv.style.cssText = 'margin-top:8px;padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:8px;font-size:12px';
-                  data.calls.forEach(function(call) {
-                    var item = document.createElement('div');
-                    item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0';
-                    item.innerHTML = '<span style="color:var(--muted)">🔧</span><span style="color:var(--text)">' + escapeHtml(call.name || '工具调用') + '</span><span class="tool-call-status" style="color:var(--muted);font-size:11px">执行中...</span>';
-                    toolDiv.appendChild(item);
+                  toolDiv.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:4px';
+                  data.calls.forEach(function(call, idx) {
+                    var card = document.createElement('div');
+                    card.id = 'tool-card-' + idx;
+                    card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:6px;font-size:12px';
+                    var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', create_project:'创建项目', question:'用户确认' }[call.name] || call.name;
+                    var displayIcon = { fs_list:'📁', fs_read:'📄', fs_write:'✏️', fs_delete:'🗑️', fs_search:'🔍', fs_info:'ℹ️', save_file:'💾', read_file:'📄', list_files:'📂', generate_image:'🖼️', create_project:'📁', question:'❓' }[call.name] || '🔧';
+                    card.innerHTML = '<span style="font-size:14px">' + displayIcon + '</span><span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:#e3b341;font-size:11px;display:flex;align-items:center;gap:3px"><span class="tool-spinner" style="display:inline-block;width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:spin 0.8s linear infinite"></span>执行中</span>';
+                    toolDiv.appendChild(card);
                     // Handle question tool inline
                     if (call.name === 'question' && call.args && call.args.options) {
                       renderQuestionButtons(call.args.question, call.args.options);
                     }
                   });
                   msgBody.appendChild(toolDiv);
+                  // Add spinner animation if not exists
+                  if (!document.getElementById('tool-spinner-style')) {
+                    var style = document.createElement('style');
+                    style.id = 'tool-spinner-style';
+                    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+                    document.head.appendChild(style);
+                  }
                 }
                 addLog('工具调用: ' + (data.calls.map(c => c.name).join(', ')));
               }
               if (data.type === 'tool_results') {
-                // Update inline tool status
-                var toolItems = document.querySelectorAll('.tool-calls-inline .tool-call-status');
-                toolItems.forEach(function(st) { st.textContent = '完成'; st.style.color = '#2ea44f'; });
+                // Update inline tool status with checkmark/X
+                if (data.results) {
+                  data.results.forEach(function(r, idx) {
+                    var card = document.getElementById('tool-card-' + idx);
+                    if (card) {
+                      var st = card.querySelector('.tool-call-status');
+                      if (st) {
+                        if (r.result && r.result.ok) {
+                          st.innerHTML = '<span style="color:#2ea44f">✓ 完成</span>';
+                        } else {
+                          st.innerHTML = '<span style="color:#d32f2f">✗ ' + escapeHtml((r.result && r.result.message) || '失败') + '</span>';
+                        }
+                      }
+                    }
+                  });
+                }
                 // Also update sidebar tool log
                 var sidebar = document.getElementById('toolCallsContainer');
                 if (sidebar) {
@@ -3024,6 +3047,12 @@ function doSendMessage(msg) {
                     }
                     if (r.name === 'fs_read' && r.result && r.result.ok && r.result.content) {
                       addOutputArtifact(r.args.path.split(/[\\/]/).pop(), 'text', r.result.content);
+                    }
+                    if (r.name === 'save_file' && r.result && r.result.ok) {
+                      addOutputArtifact(r.args.filename || 'untitled', 'text', r.args.content || '');
+                    }
+                    if (r.name === 'read_file' && r.result && r.result.ok && r.result.content) {
+                      addOutputArtifact(r.args.filename || 'untitled', 'text', r.result.content);
                     }
                   });
                 }
@@ -3064,7 +3093,7 @@ function updateStreamMessage(content) {
   var isNearBottom = mc.scrollHeight - mc.scrollTop - mc.clientHeight < 100;
   var typingAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
   typing.innerHTML = '<div class="message-avatar"><img src="' + typingAvatarSrc + '" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
-    '<div class="message-body">' + renderMarkdown(content) + '</div>';
+    '<div class="message-body">' + renderMarkdown(processThinkBlocks(content)) + '</div>';
   /* 只有用户在底部时才自动滚动 */
   if (isNearBottom) mc.scrollTop = mc.scrollHeight;
 }

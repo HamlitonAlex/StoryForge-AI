@@ -527,7 +527,21 @@ async function agentChat(userMessage, conversationId, history, files, config, se
 6. question - 向用户确认
    args: {"question":"确认问题","options":["选项1","选项2"]}
 
-注意：一次回复中可以包含多个工具调用。先输出内容给用户看，再调用工具保存。`;
+7. fs_list - 列出目录内容
+   args: {"path":"目录路径"}
+8. fs_read - 读取文件内容
+   args: {"path":"文件路径"}
+9. fs_write - 写入/创建文件
+   args: {"path":"文件路径","content":"文件内容"}
+10. fs_search - 搜索文件
+    args: {"directory":"目录路径","pattern":"搜索模式(如*.txt)"}
+11. fs_delete - 删除文件或目录
+    args: {"path":"文件/目录路径"}
+12. fs_info - 获取文件信息
+    args: {"path":"文件路径"}
+
+文件系统工具的操作范围：${getAllowedBaseDir()}
+注意：一次回复中可以包含多个工具调用。先输出内容给用户看，再调用工具保存或执行文件操作。`;
 
   const messages = [{ role: 'system', content: systemPrompt }];
   if (history && Array.isArray(history)) {
@@ -1230,7 +1244,7 @@ const server = http.createServer(async (req, res) => {
         if (!res.writableEnded) res.write(': heartbeat\n\n');
       }, 30000);
 
-      function finishSSE(text) {
+      function finishSSE(text, isToolRound) {
         clearInterval(heartbeat);
         if (res.writableEnded) return;
         const toolCalls = extractToolCalls(text);
@@ -1238,10 +1252,78 @@ const server = http.createServer(async (req, res) => {
           res.write(`data: ${JSON.stringify({ type: 'tool_calls', calls: toolCalls })}\n\n`);
           executeToolCalls(toolCalls, config).then(results => {
             res.write(`data: ${JSON.stringify({ type: 'tool_results', results })}\n\n`);
-            res.write('data: [DONE]\n\n'); res.end();
-          }).catch(e => {
-            res.write(`data: ${JSON.stringify({ type: 'tool_error', error: e.message })}\n\n`);
-            res.write('data: [DONE]\n\n'); res.end();
+            // Build tool results summary for the model
+            const toolSummary = results.map(r => {
+              const argsStr = JSON.stringify(r.args || {});
+              const resStr = JSON.stringify(r.result || {});
+              return `[TOOL_RESULT]${r.name}: ${resStr}[/TOOL_RESULT]`;
+            }).join('\n');
+            // Strip tool calls from the text, append tool results, and call LLM again
+            const cleanText = text.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '').trim();
+            const followUpMessage = cleanText + '\n\n工具执行结果：\n' + toolSummary + '\n\n请根据工具执行结果继续回复用户。';
+            // Make second API call
+            agentChat(followUpMessage, body.conversation_id, body.history || [], body.files || [], config, body.skills || null).then(llmRes2 => {
+              let fullText2 = '', buffer2 = '';
+              llmRes2.on('data', (chunk) => {
+                buffer2 += chunk.toString();
+                const lines2 = buffer2.split('\n');
+                buffer2 = lines2.pop() || '';
+                for (const line of lines2) {
+                  if (line.startsWith('data: ')) {
+                    const d = line.slice(6).trim();
+                    if (d === '[DONE]') {
+                      // Check if there are nested tool calls (max 3 rounds)
+                      if (!isToolRound || isToolRound < 3) {
+                        finishSSE(fullText2, (isToolRound || 0) + 1);
+                      } else {
+                        res.write('data: [DONE]\n\n'); res.end();
+                      }
+                      return;
+                    }
+                    try {
+                      const parsed = JSON.parse(d);
+                      const delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+                      if (delta && delta.content) {
+                        fullText2 += delta.content;
+                        res.write(`data: ${JSON.stringify({ type: 'content', text: delta.content })}\n\n`);
+                      }
+                    } catch(e) {}
+                  }
+                }
+              });
+              llmRes2.on('end', () => {
+                if (buffer2.trim()) {
+                  const leftover = buffer2.trim();
+                  if (leftover.startsWith('data: ')) {
+                    const d = leftover.slice(6).trim();
+                    if (d !== '[DONE]') {
+                      try {
+                        const parsed = JSON.parse(d);
+                        const delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+                        if (delta && delta.content) {
+                          fullText2 += delta.content;
+                          res.write(`data: ${JSON.stringify({ type: 'content', text: delta.content })}\n\n`);
+                        }
+                      } catch(e) {}
+                    }
+                  }
+                }
+                if (!isToolRound || isToolRound < 3) {
+                  finishSSE(fullText2, (isToolRound || 0) + 1);
+                } else {
+                  res.write('data: [DONE]\n\n'); res.end();
+                }
+              });
+              llmRes2.on('error', (e) => {
+                if (!res.writableEnded) {
+                  res.write(`data: ${JSON.stringify({ type: 'error', error: e.message })}\n\n`);
+                  res.write('data: [DONE]\n\n'); res.end();
+                }
+              });
+            }).catch(e => {
+              res.write(`data: ${JSON.stringify({ type: 'tool_error', error: e.message })}\n\n`);
+              res.write('data: [DONE]\n\n'); res.end();
+            });
           });
         } else {
           res.write('data: [DONE]\n\n'); res.end();
