@@ -2998,38 +2998,26 @@ function doSendMessage(msg) {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
               if (data.type === 'tool_calls' && data.calls) {
-                // Show tool calls inline in the chat
                 var msgBody = typing.querySelector('.message-body');
                 if (msgBody) {
                   var toolDiv = document.createElement('div');
                   toolDiv.className = 'tool-calls-inline';
-                  toolDiv.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:4px';
+                  toolDiv.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:3px';
                   data.calls.forEach(function(call, idx) {
                     var card = document.createElement('div');
                     card.id = 'tool-card-' + idx;
-                    card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:6px;font-size:12px';
+                    card.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:4px;font-size:12px';
                     var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', question:'用户确认' }[call.name] || call.name;
-                    var displayIcon = { fs_list:'📁', fs_read:'📄', fs_write:'✏️', fs_delete:'🗑️', fs_search:'🔍', fs_info:'ℹ️', save_file:'💾', read_file:'📄', list_files:'📂', generate_image:'🖼️', question:'❓' }[call.name] || '🔧';
-                    card.innerHTML = '<span style="font-size:14px">' + displayIcon + '</span><span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:#e3b341;font-size:11px;display:flex;align-items:center;gap:3px"><span class="tool-spinner" style="display:inline-block;width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--text);border-radius:50%;animation:spin 0.8s linear infinite"></span>执行中</span>';
+                    card.innerHTML = '<span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:var(--muted);font-size:11px">加载中...</span>';
                     toolDiv.appendChild(card);
-                    // Handle question tool inline
                     if (call.name === 'question' && call.args && call.args.options) {
                       renderQuestionButtons(call.args.question, call.args.options);
                     }
                   });
                   msgBody.appendChild(toolDiv);
-                  // Add spinner animation if not exists
-                  if (!document.getElementById('tool-spinner-style')) {
-                    var style = document.createElement('style');
-                    style.id = 'tool-spinner-style';
-                    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-                    document.head.appendChild(style);
-                  }
                 }
-                addLog('工具调用: ' + (data.calls.map(c => c.name).join(', ')));
               }
               if (data.type === 'tool_results') {
-                // Update inline tool status with checkmark/X
                 if (data.results) {
                   data.results.forEach(function(r, idx) {
                     var card = document.getElementById('tool-card-' + idx);
@@ -3037,21 +3025,22 @@ function doSendMessage(msg) {
                       var st = card.querySelector('.tool-call-status');
                       if (st) {
                         if (r.result && r.result.ok) {
-                          st.innerHTML = '<span style="color:#2ea44f">✓ 完成</span>';
+                          st.textContent = '已完成';
+                          st.style.color = '#2ea44f';
                         } else {
-                          st.innerHTML = '<span style="color:#d32f2f">✗ ' + escapeHtml((r.result && r.result.message) || '失败') + '</span>';
+                          st.textContent = '失败';
+                          st.style.color = '#d32f2f';
                         }
                       }
                     }
                   });
                 }
-                // Also update sidebar tool log
                 var sessionTools = document.getElementById('sessionToolCalls');
                 if (sessionTools) {
                   sessionTools.style.display = 'block';
                   var logDiv = document.createElement('div');
-                  logDiv.style.cssText = 'padding:3px 0;font-size:12px;color:var(--text);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:4px';
-                  logDiv.textContent = '工具执行完成: ' + (data.results || []).map(function(r) { return (r.result && r.result.ok ? '✓ ' : '✗ ') + r.name; }).join(', ');
+                  logDiv.style.cssText = 'padding:3px 0;font-size:12px;color:var(--muted)';
+                  logDiv.textContent = '思考已完成';
                   sessionTools.appendChild(logDiv);
                   sessionTools.scrollTop = sessionTools.scrollHeight;
                 }

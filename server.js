@@ -1232,17 +1232,19 @@ const server = http.createServer(async (req, res) => {
           res.write(`data: ${JSON.stringify({ type: 'tool_calls', calls: toolCalls })}\n\n`);
           executeToolCalls(toolCalls, config).then(results => {
             res.write(`data: ${JSON.stringify({ type: 'tool_results', results })}\n\n`);
-            // Build tool results summary for the model
+            // Build concise tool results summary
             const toolSummary = results.map(r => {
-              const argsStr = JSON.stringify(r.args || {});
-              const resStr = JSON.stringify(r.result || {});
-              return `[TOOL_RESULT]${r.name}: ${resStr}[/TOOL_RESULT]`;
+              const resStr = r.result && r.result.ok ? '成功' : ('失败: ' + (r.result && r.result.message || ''));
+              return `${r.name}: ${resStr}`;
             }).join('\n');
-            // Strip tool calls from the text, append tool results, and call LLM again
-            const cleanText = text.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '').trim();
-            const followUpMessage = cleanText + '\n\n工具执行结果：\n' + toolSummary + '\n\n请根据工具执行结果继续回复用户。';
-            // Make second API call
-            agentChat(followUpMessage, body.conversation_id, body.history || [], body.files || [], config, body.skills || null).then(llmRes2 => {
+            // Only send tool results as context, not the previous output (prevents duplication)
+            const followUpPrompt = '工具已执行完毕。执行结果：\n' + toolSummary + '\n\n请简要告知用户工具执行的结果即可，不要重复之前已说过的内容。';
+            // Make second API call with full history so model has context
+            var historyForFollowUp = (body.history || []).concat([
+              { role: 'user', content: body.message },
+              { role: 'assistant', content: text.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '').trim() }
+            ]);
+            agentChat(followUpPrompt, body.conversation_id, historyForFollowUp, body.files || [], config, body.skills || null).then(llmRes2 => {
               let fullText2 = '', buffer2 = '';
               llmRes2.on('data', (chunk) => {
                 buffer2 += chunk.toString();
