@@ -1330,6 +1330,7 @@ a{color:var(--accent);text-decoration:none}
         <button class="icon-btn" onclick="exportChat()" title="下载对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="icon-btn" onclick="clearCurrentChat()" title="清空对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
+      <div id="sessionToolCalls" style="display:none;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--bg-secondary);font-size:12px;max-height:120px;overflow-y:auto"></div>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input-area">
         <div class="upload-preview" id="uploadPreview" style="display:none"></div>
@@ -1466,12 +1467,12 @@ a{color:var(--accent);text-decoration:none}
       </div>
     </div>
     <div class="workspace-section" style="margin-top:12px">
-      <div class="workspace-section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="workspace-section-title" style="display:flex;align-items:center;justify-content:space-between;font-size:14px">
         <span>AI 产物</span>
-        <span id="outputCount" style="font-size:11px;color:var(--muted)">0 项</span>
+        <span id="outputCount" style="font-size:12px;color:var(--muted)">0 项</span>
       </div>
       <div id="outputList" style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
-        <div style="padding:8px;font-size:12px;color:var(--muted);text-align:center">暂无产物</div>
+        <div style="padding:10px;font-size:13px;color:var(--muted);text-align:center">暂无产物</div>
       </div>
     </div>
     <div class="workspace-section">
@@ -1481,12 +1482,6 @@ a{color:var(--accent);text-decoration:none}
         <button class="project-add-btn" id="workspaceProjectAdd" title="新建项目">+</button>
       </div>
       <div class="workspace-file-list" id="workspaceFileList"></div>
-    </div>
-    <div class="workspace-section">
-      <div class="workspace-section-title">工具调用</div>
-      <div class="tool-calls-container" id="toolCallsContainer">
-        <div style="font-size:12px;color:var(--faint);padding:8px 0">暂无工具调用</div>
-      </div>
     </div>
     <div class="workspace-section">
       <div class="workspace-section-title">操作日志</div>
@@ -1650,17 +1645,30 @@ function escapeHtml(s) {
 var _outputArtifacts = []; // { id, name, type, content, timestamp }
 
 function addOutputArtifact(name, type, content) {
+  // 去重：同名文件只保留最新版本
+  var existIdx = -1;
+  for (var i = 0; i < _outputArtifacts.length; i++) {
+    if (_outputArtifacts[i].name === name) { existIdx = i; break; }
+  }
+  if (existIdx >= 0) {
+    _outputArtifacts[existIdx].content = content;
+    _outputArtifacts[existIdx].timestamp = new Date().toISOString();
+    _outputArtifacts[existIdx].saved = false;
+    renderOutputList();
+    if (config.work_dir && config.auto_save !== false) {
+      saveArtifactToDisk(_outputArtifacts[existIdx]);
+    }
+    return _outputArtifacts[existIdx];
+  }
   var artifact = {
     id: 'art_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
     name: name,
-    type: type || 'text', // text, markdown, json, image
+    type: type || 'text',
     content: content,
     timestamp: new Date().toISOString()
   };
   _outputArtifacts.push(artifact);
   renderOutputList();
-  
-  // Auto-save to work folder
   if (config.work_dir && config.auto_save !== false) {
     saveArtifactToDisk(artifact);
   }
@@ -1682,9 +1690,9 @@ function renderOutputList() {
   _outputArtifacts.slice().reverse().forEach(function(a) {
     var typeLabel = { text: '文本', markdown: 'MD', json: 'JSON', image: '图片' }[a.type] || '文件';
     var savedLabel = a.saved ? '✓' : '';
-    html += '<div onclick="previewArtifact(\'' + a.id + '\')" style="padding:6px 8px;border:1px solid var(--line);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;background:var(--bg-secondary)">' +
-      '<span style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + escapeHtml(a.name) + '</span>' +
-      '<span style="font-size:10px;color:var(--muted);flex-shrink:0">' + typeLabel + ' ' + savedLabel + '</span></div>';
+    html += '<div onclick="previewArtifact(\'' + a.id + '\')" style="padding:8px 10px;border:1px solid var(--line);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;background:var(--bg-secondary)">' +
+      '<span style="font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + escapeHtml(a.name) + '</span>' +
+      '<span style="font-size:11px;color:var(--muted);flex-shrink:0">' + typeLabel + ' ' + savedLabel + '</span></div>';
   });
   list.innerHTML = html;
 }
@@ -3032,12 +3040,14 @@ function doSendMessage(msg) {
                   });
                 }
                 // Also update sidebar tool log
-                var sidebar = document.getElementById('toolCallsContainer');
-                if (sidebar) {
+                var sessionTools = document.getElementById('sessionToolCalls');
+                if (sessionTools) {
+                  sessionTools.style.display = 'block';
                   var logDiv = document.createElement('div');
-                  logDiv.style.cssText = 'padding:4px 0;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)';
-                  logDiv.textContent = '工具执行完成: ' + (data.results || []).map(function(r) { return r.name + ':' + (r.result && r.result.ok ? '成功' : '失败'); }).join(', ');
-                  sidebar.appendChild(logDiv);
+                  logDiv.style.cssText = 'padding:3px 0;font-size:12px;color:var(--text);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:4px';
+                  logDiv.textContent = '工具执行完成: ' + (data.results || []).map(function(r) { return (r.result && r.result.ok ? '✓ ' : '✗ ') + r.name; }).join(', ');
+                  sessionTools.appendChild(logDiv);
+                  sessionTools.scrollTop = sessionTools.scrollHeight;
                 }
                 // Auto-create artifacts from tool results
                 if (data.results) {
