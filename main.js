@@ -115,6 +115,37 @@ ipcMain.handle('select-folder', async () => {
   return result.filePaths[0];
 });
 
+ipcMain.handle('select-file', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    title: '打开本地文件',
+    filters: [
+      { name: '所有支持文件', extensions: ['txt','md','json','js','ts','py','html','css','yaml','yml','xml','csv','log','jpg','jpeg','png','gif','svg','bmp','mp3','mp4','wav','pdf'] },
+      { name: '文本文件', extensions: ['txt','md','json','js','ts','py','html','css','yaml','yml','xml','csv','log'] },
+      { name: '图片文件', extensions: ['jpg','jpeg','png','gif','svg','bmp'] },
+      { name: '所有文件', extensions: ['*'] }
+    ]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths;
+});
+
+ipcMain.handle('read-file', async (event, filePath) => {
+  try {
+    const ext = filePath.split('.').pop().toLowerCase();
+    const imageExts = ['jpg','jpeg','png','gif','svg','bmp','webp'];
+    if (imageExts.includes(ext)) {
+      const data = fs.readFileSync(filePath);
+      return { success: true, type: 'image', ext: ext, data: data.toString('base64'), path: filePath };
+    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { success: true, type: 'text', content: content, path: filePath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
 ipcMain.handle('save-file', async (event, { filePath, content }) => {
   try {
     const dir = path.dirname(filePath);

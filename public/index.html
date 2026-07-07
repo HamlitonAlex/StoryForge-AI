@@ -1382,6 +1382,23 @@ a{color:var(--accent);text-decoration:none}
   </div>
   <div class="right-panel-body">
     <div class="workspace-section">
+      <div class="workspace-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>打开本地文件</span>
+        <button onclick="openLocalFiles()" style="padding:2px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg-secondary);color:var(--text);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:3px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+          打开
+        </button>
+      </div>
+      <div id="localFileTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px"></div>
+      <div id="localFilePreview" style="margin-top:8px;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span id="localFileName" style="font-size:12px;color:var(--muted)"></span>
+          <button onclick="closeLocalFile()" style="border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px">关闭</button>
+        </div>
+        <div id="localFileContent" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;max-height:400px;overflow:auto;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all;font-family:'Consolas','Monaco',monospace;color:var(--text)"></div>
+      </div>
+    </div>
+    <div class="workspace-section">
       <div class="workspace-section-title">当前项目</div>
       <div class="project-selector">
         <select id="workspaceProjectSelect" onchange="currentProjectId=this.value||null;loadWorkspaceFiles();updateWelcomeTitle()"><option value="">无项目</option></select>
@@ -1626,6 +1643,112 @@ function showToast(msg) {
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(function() { el.style.opacity = '0'; }, 3000);
+}
+
+/* ===== 本地文件打开与预览 ===== */
+var _openFiles = {}; // filePath -> content/type
+
+async function openLocalFiles() {
+  if (typeof electronAPI === 'undefined' || !electronAPI.selectFile) {
+    showToast('请在桌面应用中使用此功能'); return;
+  }
+  var paths = await electronAPI.selectFile();
+  if (!paths || paths.length === 0) return;
+
+  for (var i = 0; i < paths.length; i++) {
+    var fp = paths[i];
+    var result = await electronAPI.readFile(fp);
+    if (result.success) {
+      _openFiles[fp] = result;
+      renderLocalFileTabs();
+      showLocalFile(fp);
+    } else {
+      showToast('读取失败: ' + result.error);
+    }
+  }
+}
+
+function renderLocalFileTabs() {
+  var tabs = document.getElementById('localFileTabs');
+  if (!tabs) return;
+  var html = '';
+  for (var fp in _openFiles) {
+    var name = fp.split(/[\\/]/).pop();
+    var isActive = fp === _currentOpenFile ? ' active' : '';
+    html += '<button onclick="showLocalFile(\'' + fp.replace(/\\/g, '\\\\') + '\')" ' +
+      'style="padding:2px 8px;border:1px solid var(--line);border-radius:4px;background:' + (isActive ? 'var(--soft)' : 'var(--bg-secondary)') + ';color:var(--text);font-size:11px;cursor:pointer;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+      escapeHtml(name) + '</button>';
+  }
+  tabs.innerHTML = html;
+}
+
+var _currentOpenFile = null;
+
+async function showLocalFile(filePath) {
+  _currentOpenFile = filePath;
+  var file = _openFiles[filePath];
+  if (!file) return;
+
+  var name = filePath.split(/[\\/]/).pop();
+  document.getElementById('localFileName').textContent = name;
+  var content = document.getElementById('localFileContent');
+  var preview = document.getElementById('localFilePreview');
+  preview.style.display = 'block';
+
+  if (file.type === 'image') {
+    var mimeMap = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', svg: 'image/svg+xml', bmp: 'image/bmp', webp: 'image/webp' };
+    var mime = mimeMap[file.ext] || 'image/png';
+    content.innerHTML = '<img src="data:' + mime + ';base64,' + file.data + '" style="max-width:100%;border-radius:4px" alt="' + escapeHtml(name) + '">';
+    content.style.whiteSpace = '';
+    content.style.fontFamily = '';
+  } else {
+    content.textContent = file.content || '';
+    content.style.whiteSpace = 'pre-wrap';
+    content.style.fontFamily = "'Consolas','Monaco',monospace";
+  }
+  renderLocalFileTabs();
+}
+
+function closeLocalFile() {
+  if (_currentOpenFile && _openFiles[_currentOpenFile]) {
+    delete _openFiles[_currentOpenFile];
+  }
+  _currentOpenFile = null;
+  var preview = document.getElementById('localFilePreview');
+  if (preview) preview.style.display = 'none';
+  renderLocalFileTabs();
+}
+
+/* ===== 自动保存对话到本地工作文件夹 ===== */
+var _autoSaveTimer = null;
+function autoSaveToLocal() {
+  if (!config.work_dir) return;
+  if (config.auto_save === false) return;
+  if (typeof electronAPI === 'undefined' || !electronAPI.saveFile) return;
+  // 防抖：1秒内只保存一次
+  if (_autoSaveTimer) return;
+  _autoSaveTimer = setTimeout(function() { _autoSaveTimer = null; }, 1000);
+
+  var title = document.getElementById('chatTitleInput') ? document.getElementById('chatTitleInput').value : '对话';
+  var safeName = (title || '对话').replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+
+  // 保存 Markdown（可读）
+  var md = '# ' + (title || '对话') + '\n\n> 自动保存时间: ' + new Date().toLocaleString() + '\n\n---\n\n';
+  chatHistory.forEach(function(m) {
+    var role = m.role === 'user' ? '## 用户' : '## 助手';
+    md += role + '\n\n' + (m.content || '') + '\n\n---\n\n';
+  });
+
+  // 保存 JSON（结构化）
+  var json = JSON.stringify({
+    title: title,
+    conversation_id: currentConversationId,
+    auto_saved_at: new Date().toISOString(),
+    messages: chatHistory
+  }, null, 2);
+
+  electronAPI.saveFile(config.work_dir + '/对话/' + safeName + '.md', md);
+  electronAPI.saveFile(config.work_dir + '/对话/' + safeName + '.json', json);
 }
 
 /* 键盘快捷键 */
@@ -2529,6 +2652,9 @@ function finishGeneration(content) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: chatHistory })
       }).catch(function(e) { addLog('保存消息失败: ' + e.message); });
+
+      /* 自动保存到本地工作文件夹 */
+      autoSaveToLocal();
     }
   }
   addLog('回复完成');
@@ -3048,7 +3174,11 @@ function renderGeneralSettings() {
     '<div style="display:flex;gap:6px;align-items:center">' +
     '<input type="text" class="setting-input" id="cfgWorkDir" value="' + escapeHtml(workDir) + '" placeholder="未设置" style="flex:1;min-width:0" readonly>' +
     '<button onclick="selectWorkFolder()" style="padding:4px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">浏览</button>' +
-    '</div></div></div>' +
+    '</div></div>' +
+    '<div class="setting-row"><div><div class="setting-label">自动保存对话</div><div class="setting-desc">每次AI回复后自动保存到工作文件夹</div></div>' +
+    '<label style="cursor:pointer;display:flex;align-items:center;gap:6px">' +
+    '<input type="checkbox" id="cfgAutoSave" ' + (config.auto_save !== false ? 'checked' : '') + ' onchange="config.auto_save=this.checked;try{localStorage.setItem(\'sf-config\',JSON.stringify(config))}catch(e){}">' +
+    '<span style="font-size:13px;color:var(--text)">启用</span></label></div></div>' +
     '<div class="setting-group"><div class="setting-group-title">界面</div>' +
     '<div class="setting-row"><div><div class="setting-label">主题</div><div class="setting-desc">深色/浅色模式切换</div></div>' +
     '<label class="toggle-switch"><input type="checkbox" id="cfgTheme" ' + (isDark ? 'checked' : '') + ' onchange="toggleThemeFromSettings(this.checked)"><span class="toggle-slider"></span></label></div>' +
@@ -3103,9 +3233,9 @@ function renderAboutSettings() {
     '<label style="cursor:pointer;display:flex;align-items:center;gap:6px">' +
     '<input type="checkbox" id="autoUpdateToggle" onchange="saveAutoUpdateSetting(this.checked)" style="width:16px;height:16px">' +
     '<span style="font-size:13px;color:var(--text)">启动时自动检查</span></label></div>' +
-    '<div class="setting-row" style="justify-content:flex-end">' +
-    '<button onclick="checkForUpdate()" style="padding:6px 18px;border:none;border-radius:var(--radius-sm);background:var(--strong);color:var(--strong-text);font-size:13px;cursor:pointer">检查更新</button>' +
-    '<span id="updateStatus" style="font-size:12px;color:var(--muted);margin-left:10px"></span></div></div>' +
+    '<div class="setting-row" style="justify-content:flex-end;align-items:center">' +
+    '<button onclick="checkForUpdate()" id="checkUpdateBtn" style="padding:10px 28px;border:none;border-radius:var(--radius-sm);background:#0969da;color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(9,105,218,0.3);transition:all 0.2s">检查更新</button>' +
+    '<div id="updateStatus" style="font-size:13px;color:var(--muted);margin-left:12px;max-width:350px"></div></div></div>' +
     '<div class="setting-group"><div class="setting-group-title">功能特性</div>' +
     '<div style="font-size:13px;color:var(--muted);line-height:1.8">' +
     '四栏布局，Trae/Claude 风格界面<br>' +
@@ -3144,14 +3274,11 @@ function checkForUpdate() {
         status.textContent = '检查失败: ' + d.error;
         status.style.color = '#d32f2f';
       } else if (d.updateAvailable) {
-        status.textContent = '发现新版本 v' + d.latestVersion + '!';
-        status.style.color = 'var(--msg-user, #0969da)';
-        if (d.downloadUrl) {
-          status.innerHTML += ' <a href="' + d.downloadUrl + '" target="_blank" style="color:var(--msg-user, #0969da);text-decoration:underline;margin-left:8px" onclick="event.stopPropagation()">前往下载</a>';
-        }
-        if (d.releaseNotes) {
-          status.innerHTML += '<div style="font-size:12px;color:var(--muted);margin-top:4px;max-width:300px">' + d.releaseNotes + '</div>';
-        }
+        status.innerHTML = '<div style="background:#ddf4ff;border:1px solid #0969da;border-radius:8px;padding:12px 16px;margin-top:6px;max-width:320px">' +
+          '<div style="font-size:16px;font-weight:600;color:#0969da;margin-bottom:6px">发现新版本 v' + d.latestVersion + '</div>' +
+          (d.releaseNotes ? '<div style="font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5">' + d.releaseNotes + '</div>' : '') +
+          (d.downloadUrl ? '<a href="' + d.downloadUrl + '" target="_blank" style="display:inline-block;padding:8px 20px;background:#0969da;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">立即下载</a>' : '') +
+          '</div>';
       } else {
         status.textContent = '已是最新版本';
         status.style.color = 'var(--muted)';
