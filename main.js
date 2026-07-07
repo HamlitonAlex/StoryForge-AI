@@ -6,15 +6,49 @@ const fs = require('fs');
 const PORT = 18080;
 let mainWindow = null;
 
+function migrateOldData() {
+  const userDataPath = app.getPath('userData');
+  const newDataDir = path.join(userDataPath, 'data');
+  const oldDataDir = path.join(__dirname, 'data');
+
+  // 只在新数据目录为空且旧数据目录存在时执行迁移
+  if (!fs.existsSync(newDataDir) || fs.readdirSync(newDataDir).length === 0) {
+    if (fs.existsSync(oldDataDir) && fs.readdirSync(oldDataDir).length > 0) {
+      try {
+        copyDirRecursive(oldDataDir, newDataDir);
+        console.log('[迁移] 已从安装目录迁移数据到 AppData: ' + newDataDir);
+      } catch(e) {
+        console.error('[迁移] 数据迁移失败:', e.message);
+      }
+    }
+  }
+}
+
+function copyDirRecursive(src, dest) {
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
 function startServer() {
   return new Promise((resolve, reject) => {
     process.env.DRAMA_STUDIO_PORT = PORT;
-    // 数据目录 - 便携版也写到AppData
+    // 数据目录 - 写到 AppData
     const userDataPath = app.getPath('userData');
     process.env.DRAMA_STUDIO_DATA = path.join(userDataPath, 'data');
     if (!fs.existsSync(process.env.DRAMA_STUDIO_DATA)) {
       fs.mkdirSync(process.env.DRAMA_STUDIO_DATA, { recursive: true });
     }
+    // 执行旧数据迁移
+    migrateOldData();
     try {
       require('./server.js');
     } catch(e) {
@@ -152,6 +186,35 @@ ipcMain.handle('save-file', async (event, { filePath, content }) => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(filePath, content, 'utf-8');
     return { success: true, path: filePath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('save-image', async (event, { fileName, base64Data }) => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const filePath = path.join(userDataPath, fileName);
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buffer);
+    return { success: true, path: filePath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('get-app-data-path', () => {
+  return app.getPath('userData');
+});
+
+ipcMain.handle('delete-image', async (event, fileName) => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const filePath = path.join(userDataPath, fileName);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
   }

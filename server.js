@@ -35,26 +35,51 @@ process.on('unhandledRejection', (reason) => { console.error('[SERVER] Unhandled
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
+// ==================== Auto-migration from legacy installation ====================
+const LEGACY_DATA_DIR = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop', '智能体搭建', 'AI短剧创作系统', 'data');
+function migrateFromLegacy() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    // If current data dir has no config, check legacy
+    if (!fs.existsSync(path.join(DATA_DIR, 'config.json')) && fs.existsSync(LEGACY_DATA_DIR)) {
+      const items = fs.readdirSync(LEGACY_DATA_DIR);
+      items.forEach(item => {
+        const src = path.join(LEGACY_DATA_DIR, item);
+        const dst = path.join(DATA_DIR, item);
+        if (!fs.existsSync(dst)) {
+          if (fs.statSync(src).isDirectory()) {
+            copyDirSync(src, dst);
+          } else {
+            fs.copyFileSync(src, dst);
+          }
+          console.log('Migrated:', item);
+        }
+      });
+      console.log('Data migration from legacy installation complete.');
+    }
+  } catch(e) { console.error('Migration failed:', e.message); }
+}
+function copyDirSync(src, dst) {
+  fs.mkdirSync(dst, { recursive: true });
+  fs.readdirSync(src).forEach(item => {
+    const s = path.join(src, item);
+    const d = path.join(dst, item);
+    if (fs.statSync(s).isDirectory()) copyDirSync(s, d);
+    else fs.copyFileSync(s, d);
+  });
+}
+migrateFromLegacy();
+
 // ==================== Config ====================
-const DEFAULT_CONFIG = {
-  llm_base_url: 'https://token-plan-cn.xiaomimimo.com/v1/chat/completions',
-  api_key: 'tp-c5x3ykq8jrpbiui3ks4iosvtb7bcueitddrw793p5ukyjk73',
-  model: 'mimo-v2.5-pro',
-  temperature: 0.7,
-  context_limit: 200000,
-  reserved_output_tokens: 32000,
-  auto_clear_context: true,
-  use_anthropic_format: false,
-  image_api_url: 'http://localhost:3000/api/online-image',
-  image_model: 'gpt-image-2',
-  is_dark_mode: true
-};
+const DEFAULT_CONFIG = {};
 
 function loadConfig() {
   var fp = path.join(DATA_DIR, 'config.json');
-  var cfg = { ...DEFAULT_CONFIG };
+  var cfg = {};
   try {
-    cfg = { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(fp, 'utf-8')) };
+    cfg = JSON.parse(fs.readFileSync(fp, 'utf-8'));
   } catch(e) {}
   // 合并 providers 到 config
   var pp = path.join(DATA_DIR, 'providers.json');
@@ -70,6 +95,21 @@ function loadConfig() {
 
 function saveConfig(cfg) {
   fs.writeFileSync(path.join(DATA_DIR, 'config.json'), JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+// ==================== File System Helpers ====================
+function getAllowedBaseDir() {
+  const cfg = loadConfig();
+  return cfg.work_dir || path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop');
+}
+
+function validatePath(requestedPath) {
+  const base = getAllowedBaseDir();
+  const resolved = path.resolve(requestedPath);
+  if (!resolved.startsWith(path.resolve(base))) {
+    return null; // Path traversal attempt
+  }
+  return resolved;
 }
 
 // ==================== Conversations ====================
@@ -722,6 +762,67 @@ const server = http.createServer(async (req, res) => {
 
     // === API ===
     if (pathname === '/api/health') return json(res, { status: 'ok', time: new Date().toISOString() });
+
+    // --- Tools: AI Agent 文件系统工具 ---
+    if (pathname === '/api/tools/status' && req.method === 'GET') {
+      const cfg = loadConfig();
+      const workDir = cfg.work_dir || '';
+      const enabled = !!workDir;
+      return json(res, { enabled: enabled, work_dir: workDir, message: enabled ? '文件操作已启用' : '未配置工作目录，请先在设置中配置' });
+    }
+    if (pathname === '/api/tools/execute' && req.method === 'POST') {
+      const cfg = loadConfig();
+      const workDir = cfg.work_dir || '';
+      if (!workDir) return json(res, { success: false, error: '未配置工作目录，请先在设置中配置工作目录' });
+      if (!fs.existsSync(workDir)) return json(res, { success: false, error: '工作目录不存在: ' + workDir });
+      const body = JSON.parse(await readBody(req));
+      const tool = body.tool;
+      const targetPath = body.path || '';
+      // 安全检查：目标路径必须在 work_dir 范围内
+      const resolvedTarget = path.resolve(workDir, targetPath);
+      const resolvedWorkDir = path.resolve(workDir);
+      if (!resolvedTarget.startsWith(resolvedWorkDir + path.sep) && resolvedTarget !== resolvedWorkDir) {
+        return json(res, { success: false, error: '操作被拒绝：路径超出工作目录范围' });
+      }
+      try {
+        switch(tool) {
+          case 'read_file': {
+            if (!fs.existsSync(resolvedTarget)) return json(res, { success: false, error: '文件不存在: ' + targetPath });
+            const content = fs.readFileSync(resolvedTarget, 'utf-8');
+            return json(res, { success: true, content: content, path: targetPath });
+          }
+          case 'write_file': {
+            const content = body.content || '';
+            const dir = path.dirname(resolvedTarget);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(resolvedTarget, content, 'utf-8');
+            return json(res, { success: true, path: targetPath, message: '文件已写入' });
+          }
+          case 'list_directory': {
+            if (!fs.existsSync(resolvedTarget)) return json(res, { success: false, error: '目录不存在: ' + targetPath });
+            const stat = fs.statSync(resolvedTarget);
+            if (!stat.isDirectory()) return json(res, { success: false, error: '不是目录: ' + targetPath });
+            const entries = fs.readdirSync(resolvedTarget, { withFileTypes: true }).map(e => ({
+              name: e.name, is_file: e.isFile(), is_directory: e.isDirectory()
+            }));
+            return json(res, { success: true, entries: entries, path: targetPath });
+          }
+          case 'delete_file': {
+            if (!fs.existsSync(resolvedTarget)) return json(res, { success: false, error: '文件不存在: ' + targetPath });
+            fs.unlinkSync(resolvedTarget);
+            return json(res, { success: true, path: targetPath, message: '文件已删除' });
+          }
+          case 'create_directory': {
+            fs.mkdirSync(resolvedTarget, { recursive: true });
+            return json(res, { success: true, path: targetPath, message: '目录已创建' });
+          }
+          default:
+            return json(res, { success: false, error: '未知工具: ' + tool });
+        }
+      } catch(e) {
+        return json(res, { success: false, error: '工具执行失败: ' + e.message });
+      }
+    }
 
     // --- Config ---
     if (pathname === '/api/config') {
@@ -1884,6 +1985,111 @@ const server = http.createServer(async (req, res) => {
       } catch(e) {
         return json(res, { currentVersion: '3.1.2', latestVersion: '3.1.2', updateAvailable: false, downloadUrl: '', releaseNotes: '' });
       }
+    }
+
+    // ===== File System Operations =====
+    if (url === '/api/fs/list' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath || getAllowedBaseDir());
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      if (!fs.existsSync(resolved)) return json(res, { success: false, error: '目录不存在' });
+      const stat = fs.statSync(resolved);
+      if (!stat.isDirectory()) return json(res, { success: false, error: '不是目录' });
+      const entries = fs.readdirSync(resolved, { withFileTypes: true }).map(d => ({
+        name: d.name,
+        type: d.isDirectory() ? 'dir' : 'file',
+        size: d.isFile() ? fs.statSync(path.join(resolved, d.name)).size : 0,
+        modified: fs.statSync(path.join(resolved, d.name)).mtime.toISOString()
+      }));
+      return json(res, { success: true, files: entries });
+    }
+
+    if (url === '/api/fs/read' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath, encoding } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath);
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      if (!fs.existsSync(resolved)) return json(res, { success: false, error: '文件不存在' });
+      const stat = fs.statSync(resolved);
+      if (!stat.isFile()) return json(res, { success: false, error: '不是文件' });
+      const content = fs.readFileSync(resolved, encoding || 'utf-8');
+      return json(res, { success: true, content: content });
+    }
+
+    if (url === '/api/fs/write' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath, content } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath);
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      const dir = path.dirname(resolved);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(resolved, content || '', 'utf-8');
+      return json(res, { success: true });
+    }
+
+    if (url === '/api/fs/delete' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath);
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      if (!fs.existsSync(resolved)) return json(res, { success: false, error: '文件或目录不存在' });
+      const stat = fs.statSync(resolved);
+      if (stat.isDirectory()) { fs.rmSync(resolved, { recursive: true, force: true }); }
+      else { fs.unlinkSync(resolved); }
+      return json(res, { success: true });
+    }
+
+    if (url === '/api/fs/search' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { directory, pattern } = JSON.parse(body || '{}');
+      const resolvedDir = validatePath(directory || getAllowedBaseDir());
+      if (!resolvedDir) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      if (!fs.existsSync(resolvedDir)) return json(res, { success: false, error: '目录不存在' });
+      // Simple recursive search with glob-like pattern support
+      const results = [];
+      const regex = new RegExp('^' + (pattern || '*').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i');
+      function searchDir(dir) {
+        try {
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (regex.test(entry.name)) {
+              results.push({ path: fullPath, name: entry.name });
+            }
+            if (entry.isDirectory() && !entry.name.startsWith('.')) {
+              searchDir(fullPath);
+            }
+          }
+        } catch(e) {}
+      }
+      searchDir(resolvedDir);
+      return json(res, { success: true, files: results });
+    }
+
+    if (url === '/api/fs/mkdir' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath);
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      fs.mkdirSync(resolved, { recursive: true });
+      return json(res, { success: true });
+    }
+
+    if (url === '/api/fs/info' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: reqPath } = JSON.parse(body || '{}');
+      const resolved = validatePath(reqPath);
+      if (!resolved) return json(res, { success: false, error: '路径不在允许的工作区域内' });
+      if (!fs.existsSync(resolved)) return json(res, { success: false, error: '文件或目录不存在' });
+      const stat = fs.statSync(resolved);
+      return json(res, { success: true, info: {
+        name: path.basename(resolved),
+        size: stat.size,
+        type: stat.isDirectory() ? 'dir' : 'file',
+        modified: stat.mtime.toISOString(),
+        created: stat.birthtime.toISOString()
+      }});
     }
 
     err(res, 'Not found', 404);

@@ -398,6 +398,7 @@ a{color:var(--accent);text-decoration:none}
 .chat-header{
   padding:10px 20px;border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:10px;background:var(--bg-base);
+  position:relative;
 }
 .icon-btn{
   width:30px;height:30px;border:none;background:transparent;
@@ -415,6 +416,28 @@ a{color:var(--accent);text-decoration:none}
   font-size:11px;color:var(--faint);white-space:nowrap;
   background:var(--soft);padding:3px 10px;border-radius:999px;font-weight:500;letter-spacing:.02em;
 }
+.chat-model-switcher {
+  display: flex; align-items: center; gap: 4px; padding: 3px 10px;
+  border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+  font-size: 12px; color: var(--muted); transition: all 0.2s;
+  max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.chat-model-switcher:hover { background: var(--soft); color: var(--text); border-color: var(--text); }
+.model-dropdown {
+  position: absolute; top: 100%; left: 0; min-width: 200px;
+  background: var(--bg-secondary); border: 1px solid var(--line);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  z-index: 100; overflow: hidden; margin-top: 4px;
+}
+.model-dropdown-list { padding: 4px; max-height: 200px; overflow-y: auto; }
+.model-dropdown-item {
+  padding: 6px 10px; border-radius: 4px; cursor: pointer;
+  font-size: 12px; color: var(--text); display: flex;
+  align-items: center; justify-content: space-between;
+}
+.model-dropdown-item:hover { background: var(--soft); }
+.model-dropdown-item.active { background: var(--soft); color: var(--strong-text); font-weight: 600; }
+.model-dropdown-footer { padding: 6px; border-top: 1px solid var(--line); }
 .chat-messages{flex:1;overflow-y:auto;padding:20px 24px}
 .message{display:flex;gap:10px;margin-bottom:20px;max-width:85%;animation:fadeIn .2s}
 .message.user{flex-direction:row-reverse;margin-left:auto}
@@ -1049,6 +1072,34 @@ a{color:var(--accent);text-decoration:none}
 .tool-call-status.running{color:#f59e0b}
 .tool-call-status.done{color:var(--ok)}
 .tool-call-status.error{color:var(--danger)}
+.thinking-block{margin:6px 0;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--line)}
+.thinking-header{cursor:pointer;padding:8px 12px;background:var(--soft);border-left:3px solid #f0883e;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
+.thinking-header:hover{background:var(--soft-2)}
+.thinking-toggle{font-size:10px;transition:transform .2s}
+.thinking-block.open .thinking-toggle{transform:rotate(180deg)}
+.thinking-content{padding:8px 12px;font-size:12px;color:var(--muted);border-left:3px solid #f0883e;max-height:300px;overflow:auto;display:none;background:rgba(240,136,62,0.03)}
+.thinking-block.open .thinking-content{display:block}
+.think-block {
+  margin: 8px 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+}
+.think-toggle {
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  cursor: pointer; background: var(--bg-secondary); font-size: 12px;
+  color: var(--muted); user-select: none;
+}
+.think-toggle:hover { color: var(--text); }
+.think-arrow { transition: transform 0.2s; }
+.think-block.collapsed .think-arrow { transform: rotate(-90deg); }
+.think-block.collapsed .think-content { display: none; }
+.think-content {
+  padding: 10px 12px; font-size: 13px; color: var(--muted);
+  line-height: 1.6; border-top: 1px solid var(--line);
+}
+.think-label { font-weight: 500; }
+.appearance-preview{width:48px;height:48px;border-radius:var(--radius-md);object-fit:cover;border:2px solid var(--line);background:var(--soft)}
+.appearance-upload-row{display:flex;align-items:center;gap:12px;padding:10px 0}
+.appearance-upload-row label.upload-btn{padding:4px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.appearance-upload-row label.upload-btn:hover{background:var(--soft);border-color:var(--line-2)}
 .log-container{max-height:200px;overflow-y:auto}
 .log-item{font-size:11px;color:var(--faint);padding:4px 0;font-family:'Fira Code',Consolas,monospace;border-bottom:1px solid var(--line)}
 .log-time{color:var(--faint);margin-right:8px}
@@ -1123,9 +1174,6 @@ a{color:var(--accent);text-decoration:none}
     <div class="activity-bar-logo"><img src="app-icon.jpg" alt="StoryForge AI"></div>
     <button class="activity-btn active" data-view="chat" onclick="switchView('chat',null,this)" title="对话">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    </button>
-    <button class="activity-btn" data-view="projects" onclick="switchView('projects',null,this)" title="项目">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     </button>
     <button class="activity-btn" data-view="skills" onclick="switchView('skills',null,this)" title="技能">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -1258,7 +1306,19 @@ a{color:var(--accent);text-decoration:none}
       <div class="chat-header">
         <button class="icon-btn" onclick="toggleRightPanel()" title="工作区" id="workspaceToggleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg></button>
         <input type="text" class="chat-title-input" id="chatTitleInput" value="新对话">
-        <span class="chat-meta" id="chatModelMeta">模型未配置</span>
+        <span class="chat-model-switcher" id="chatModelSwitcher" onclick="toggleModelDropdown(event)">
+          <span id="chatModelName">模型未配置</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+        <div class="model-dropdown" id="modelDropdown" style="display:none">
+          <div class="model-dropdown-list" id="modelDropdownList"></div>
+          <div class="model-dropdown-footer">
+            <button onclick="event.stopPropagation();switchToSettingsTab('model')" style="padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:4px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              添加模型
+            </button>
+          </div>
+        </div>
         <button class="icon-btn" onclick="exportChatToFolder()" title="导出到文件夹"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
         <button class="icon-btn" onclick="exportChat()" title="下载对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="icon-btn" onclick="clearCurrentChat()" title="清空对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -1558,6 +1618,7 @@ function loadAll() {
   loadProjects();
   loadConfig();
   loadSkillOptions();
+  loadCustomAppearance();
   switchView('chat', null, null);
 }
 
@@ -1616,6 +1677,231 @@ function initModalEvents() {
   });
   if (box) box.addEventListener('click', function (e) {
     e.stopPropagation();
+  });
+}
+
+/* ============================================
+   自定义外观
+   ============================================ */
+var customAppearance = { logo: null, avatar: null, aiAvatar: null };
+
+function handleAppearanceUpload(type, input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result;
+    var fileNameMap = { logo: 'custom-logo.png', avatar: 'custom-avatar.png', 'ai-avatar': 'custom-ai-avatar.png' };
+    var previewMap = { logo: 'previewLogo', avatar: 'previewAvatar', 'ai-avatar': 'previewAiAvatar' };
+    var configKeyMap = { logo: 'app_logo', avatar: 'user_avatar', 'ai-avatar': 'ai_avatar' };
+    var fileName = fileNameMap[type];
+    var previewId = previewMap[type];
+    var configKey = configKeyMap[type];
+    var base64Data = base64.split(',')[1];
+    // 保存到内存
+    customAppearance[type === 'ai-avatar' ? 'aiAvatar' : type] = base64;
+    // 保存到 localStorage
+    try {
+      config[configKey] = base64;
+      localStorage.setItem('sf-config', JSON.stringify(config));
+    } catch(err) {}
+    // 更新预览
+    var preview = document.getElementById(previewId);
+    if (preview) preview.src = base64;
+    // 保存到 userData (Electron 环境)
+    if (typeof electronAPI !== 'undefined' && electronAPI.saveImage) {
+      electronAPI.saveImage(fileName, base64Data).then(function(result) {
+        if (result && result.success) {
+          addLog('外观图片已保存: ' + fileName);
+        } else {
+          addLog('保存失败: ' + (result && result.error || '未知错误'));
+        }
+      });
+    }
+    applyCustomAppearance();
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetAppearanceDefaults() {
+  if (typeof electronAPI !== 'undefined' && electronAPI.deleteImage) {
+    electronAPI.deleteImage('custom-logo.png');
+    electronAPI.deleteImage('custom-avatar.png');
+    electronAPI.deleteImage('custom-ai-avatar.png');
+  }
+  customAppearance = { logo: null, avatar: null, aiAvatar: null };
+  // 清除 localStorage 中的自定义外观配置
+  delete config.app_logo;
+  delete config.user_avatar;
+  delete config.ai_avatar;
+  try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+  var previews = ['previewLogo', 'previewAvatar', 'previewAiAvatar'];
+  previews.forEach(function(id) { var el = document.getElementById(id); if (el) el.src = ''; });
+  applyCustomAppearance();
+  // 重新渲染外观设置页面以更新预览
+  var panel = document.getElementById('settingsAppearance');
+  if (panel) panel.innerHTML = renderAppearanceSettings();
+  addLog('外观已恢复默认');
+}
+
+function loadCustomAppearance() {
+  // 首先从 localStorage 加载自定义外观
+  try {
+    var savedConfig = JSON.parse(localStorage.getItem('sf-config') || '{}');
+    if (savedConfig.app_logo) customAppearance.logo = savedConfig.app_logo;
+    if (savedConfig.user_avatar) customAppearance.avatar = savedConfig.user_avatar;
+    if (savedConfig.ai_avatar) customAppearance.aiAvatar = savedConfig.ai_avatar;
+    applyCustomAppearance();
+  } catch(e) {}
+  // 再尝试从 Electron userData 加载（会覆盖 localStorage 如果存在）
+  if (typeof electronAPI === 'undefined' || !electronAPI.getAppDataPath) return;
+  electronAPI.getAppDataPath().then(function(dataPath) {
+    if (!dataPath) return;
+    var checks = [
+      { type: 'logo', key: 'logo', file: 'custom-logo.png', preview: 'previewLogo' },
+      { type: 'avatar', key: 'avatar', file: 'custom-avatar.png', preview: 'previewAvatar' },
+      { type: 'aiAvatar', key: 'aiAvatar', file: 'custom-ai-avatar.png', preview: 'previewAiAvatar' }
+    ];
+    checks.forEach(function(c) {
+      if (typeof electronAPI.readFile === 'function') {
+        electronAPI.readFile(dataPath + '/' + c.file).then(function(result) {
+          if (result && result.success && result.type === 'image') {
+            customAppearance[c.key] = 'data:image/' + result.ext + ';base64,' + result.data;
+            var preview = document.getElementById(c.preview);
+            if (preview) preview.src = customAppearance[c.key];
+            applyCustomAppearance();
+          }
+        }).catch(function() {});
+      }
+    });
+  });
+}
+
+function applyCustomAppearance() {
+  // 更新 activity bar logo
+  var logoEl = document.querySelector('.activity-bar-logo img');
+  if (logoEl) {
+    if (customAppearance.logo) {
+      logoEl.src = customAppearance.logo;
+    } else {
+      logoEl.src = 'app-icon.jpg';
+    }
+  }
+  // 更新所有 AI 消息头像
+  document.querySelectorAll('.message.assistant .message-avatar img').forEach(function(img) {
+    if (customAppearance.aiAvatar) img.src = customAppearance.aiAvatar;
+  });
+  // 更新所有用户消息头像区域（SVG 替换为图片）
+  document.querySelectorAll('.message.user .message-avatar').forEach(function(av) {
+    if (customAppearance.avatar && !av.querySelector('img')) {
+      av.innerHTML = '<img src="' + customAppearance.avatar + '" alt="用户" style="width:16px;height:16px;border-radius:50%">';
+    } else if (customAppearance.avatar) {
+      var img = av.querySelector('img');
+      if (img) img.src = customAppearance.avatar;
+    }
+  });
+  // 更新 typing indicator 中的 AI 头像
+  var typing = document.getElementById('typingIndicator');
+  if (typing) {
+    var typingImg = typing.querySelector('.message-avatar img');
+    if (typingImg && customAppearance.aiAvatar) typingImg.src = customAppearance.aiAvatar;
+  }
+}
+
+/* ============================================
+   模型快速切换下拉框
+   ============================================ */
+function toggleModelDropdown(e) {
+  e.stopPropagation();
+  var dd = document.getElementById('modelDropdown');
+  if (!dd) return;
+  var isVisible = dd.style.display !== 'none';
+  dd.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) renderModelDropdown();
+}
+function renderModelDropdown() {
+  var list = document.getElementById('modelDropdownList');
+  if (!list) return;
+  var models = [];
+  if (config.model_name) models.push({ name: config.model_name, primary: true });
+  // Add from providers
+  try {
+    var providers = JSON.parse(localStorage.getItem('sf-providers') || '[]');
+    providers.forEach(function(p) { if (p.model_name && models.indexOf(p.model_name) === -1) models.push({ name: p.model_name }); });
+  } catch(e) {}
+  var currentModel = config.model_name || '';
+  var html = '';
+  if (models.length === 0) {
+    html = '<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">暂无模型配置</div>';
+  } else {
+    models.forEach(function(m) {
+      var isActive = m.name === currentModel ? ' active' : '';
+      html += '<div class="model-dropdown-item' + isActive + '" onclick="event.stopPropagation();selectModel(\'' + m.name.replace(/'/g, "\\'") + '\')">' +
+        '<span>' + escapeHtml(m.name) + '</span>' +
+        (m.primary ? '<span style="font-size:10px;color:var(--muted)">当前</span>' : '') +
+        '</div>';
+    });
+  }
+  list.innerHTML = html;
+}
+function selectModel(name) {
+  config.model_name = name;
+  try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+  document.getElementById('chatModelName').textContent = name;
+  document.getElementById('modelDropdown').style.display = 'none';
+  var meta = document.getElementById('chatModelName');
+  if (meta) meta.textContent = name;
+}
+function switchToSettingsTab(tabId) {
+  document.getElementById('modelDropdown').style.display = 'none';
+  switchView('settings');
+  // Trigger settings tab switch
+  setTimeout(function() {
+    var btns = document.querySelectorAll('.settings-nav-item');
+    btns.forEach(function(btn) {
+      if (btn.getAttribute('data-tab') === tabId) btn.click();
+    });
+  }, 100);
+}
+// Close dropdown on outside click
+document.addEventListener('click', function() {
+  var dd = document.getElementById('modelDropdown');
+  if (dd) dd.style.display = 'none';
+});
+
+/* ============================================
+   AI 思考过程解析与渲染
+   ============================================ */
+function parseThinkingContent(content) {
+  // 匹配 <thinking>...</thinking> 标签
+  var thinkRegex = /<thinking>([\s\S]*?)<\/thinking>/gi;
+  var matches = [];
+  var match;
+  while ((match = thinkRegex.exec(content)) !== null) {
+    matches.push({ thinking: match[1], full: match[0] });
+  }
+  if (matches.length > 0) {
+    var remaining = content;
+    matches.forEach(function(m) { remaining = remaining.replace(m.full, ''); });
+    return { thinking: matches.map(function(m) { return m.thinking; }).join('\n\n'), content: remaining.trim() };
+  }
+  // 无标签时返回原内容
+  return { thinking: '', content: content };
+}
+
+function renderThinkingBlock(text) {
+  if (!text || !text.trim()) return '';
+  return '<div class="thinking-block"><div class="thinking-header" onclick="this.parentElement.classList.toggle(\'open\')"><span>思考过程</span><span class="thinking-toggle">\u25BC</span></div><div class="thinking-content">' + escapeHtml(text) + '</div></div>';
+}
+
+function processThinkBlocks(html) {
+  // Match <think...>content</think or <think...>content (unpaired)
+  return html.replace(/<think([^>]*)>([\s\S]*?)(<\/think>|$)/gi, function(match, attrs, content, closeTag) {
+    var label = '思考过程';
+    return '<div class="think-block"><div class="think-toggle" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
+      '<svg class="think-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>' +
+      '<span class="think-label">' + label + '</span></div>' +
+      '<div class="think-content">' + content + '</div></div>';
   });
 }
 
@@ -1772,8 +2058,23 @@ function renderMarkdown(text) {
     extractedCalls.push(inner);
     return '%%TOOLCALL_' + idx + '%%';
   });
+  /* 提取 <think...>...</think| 块，避免被HTML转义破坏 */
+  var extractedThinks = [];
+  s = s.replace(/<think([^>]*)>([\s\S]*?)(<\/think>|$)/gi, function(match, attrs, content, closeTag) {
+    var idx = extractedThinks.length;
+    extractedThinks.push({ attrs: attrs, content: content });
+    return '%%THINKBLOCK_' + idx + '%%';
+  });
   /* 再做HTML转义 */
   s = escapeHtml(s);
+  /* 替换思考块占位符为可折叠HTML */
+  s = s.replace(/%%THINKBLOCK_(\d+)%%/g, function(match, idx) {
+    var block = extractedThinks[parseInt(idx)];
+    return '<div class="think-block"><div class="think-toggle" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
+      '<svg class="think-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>' +
+      '<span class="think-label">思考过程</span></div>' +
+      '<div class="think-content">' + escapeHtml(block.content.trim()) + '</div></div>';
+  });
   /* 替换占位符为question按钮 */
   s = s.replace(/%%TOOLCALL_(\d+)%%/g, function(match, idx) {
     try {
@@ -1870,12 +2171,11 @@ function switchView(view, iframeSrc, el) {
   }
   /* 更新状态栏视图名称 */
   var statusView = document.getElementById('statusView');
-  var viewNames = { chat: '对话', projects: '项目', skills: '技能', generate: '图片', settings: '设置' };
+  var viewNames = { chat: '对话', skills: '技能', generate: '图片', settings: '设置' };
   if (statusView) statusView.textContent = viewNames[view] || view;
 
   /* 隐藏所有视图 */
   document.getElementById('chatView').style.display = 'none';
-  document.getElementById('projectsView').style.display = 'none';
   document.getElementById('skillsView').style.display = 'none';
   document.getElementById('generateView').style.display = 'none';
   document.getElementById('settingsView').style.display = 'none';
@@ -1888,10 +2188,6 @@ function switchView(view, iframeSrc, el) {
     document.getElementById('chatView').style.display = 'flex';
     rp.classList.toggle('hidden', !rightPanelVisible);
     if (cp) cp.style.display = 'flex';
-  } else if (view === 'projects') {
-    document.getElementById('projectsView').style.display = 'flex';
-    rp.classList.add('hidden');
-    if (cp) cp.style.display = 'none';
   } else if (view === 'skills') {
     document.getElementById('skillsView').style.display = 'flex';
     rp.classList.add('hidden');
@@ -1911,12 +2207,10 @@ function switchView(view, iframeSrc, el) {
 
   /* 首次初始化 */
   if (view === 'chat' && !chatViewInited) { chatViewInited = true; initChatView(); }
-  if (view === 'projects' && !projectsViewInited) { projectsViewInited = true; }
   if (view === 'settings' && !settingsViewInited) { settingsViewInited = true; }
 
   /* 切换时刷新数据 */
   if (view === 'chat') refreshChatContent();
-  if (view === 'projects') refreshProjectsList();
   if (view === 'skills') refreshSkillsList();
   if (view === 'settings') refreshSettingsForm();
 }
@@ -2275,7 +2569,7 @@ function refreshChatContent() {
   var conv = conversations.find(function (c) { return c.id === currentConversationId; });
   var ti = document.getElementById('chatTitleInput');
   if (ti && conv) ti.value = conv.title || '新对话';
-  var mm = document.getElementById('chatModelMeta');
+  var mm = document.getElementById('chatModelName');
   if (mm) {
     var modelName = config.model_name || config.model || '模型未配置';
     mm.textContent = modelName;
@@ -2460,9 +2754,20 @@ function renderMessages() {
 
 function renderMessage(role, content, files) {
   var u = role === 'user';
-  var av = u
-    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-    : '<img src="app-icon.jpg" alt="AI" style="width:14px;height:14px;border-radius:3px">';
+  var av;
+  if (u) {
+    if (customAppearance.avatar) {
+      av = '<img src="' + customAppearance.avatar + '" alt="用户" style="width:16px;height:16px;border-radius:50%">';
+    } else {
+      av = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    }
+  } else {
+    if (customAppearance.aiAvatar) {
+      av = '<img src="' + customAppearance.aiAvatar + '" alt="AI" style="width:14px;height:14px;border-radius:3px">';
+    } else {
+      av = '<img src="app-icon.jpg" alt="AI" style="width:14px;height:14px;border-radius:3px">';
+    }
+  }
   /* 渲染附件 */
   var filesHtml = '';
   if (files && files.length > 0) {
@@ -2546,7 +2851,8 @@ function doSendMessage(msg) {
     if (mc) {
       var typing = document.createElement('div');
       typing.className = 'message assistant'; typing.id = 'typingIndicator';
-      typing.innerHTML = '<div class="message-avatar"><img src="app-icon.jpg" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
+      var typingAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
+      typing.innerHTML = '<div class="message-avatar"><img src="' + typingAvatarSrc + '" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
           '<div class="message-body"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-text">思考中...</span></div></div>';
       mc.appendChild(typing); mc.scrollTop = mc.scrollHeight;
     }
@@ -2624,7 +2930,8 @@ function updateStreamMessage(content) {
   if (!typing) return;
   /* 判断用户是否正在向上滚动 */
   var isNearBottom = mc.scrollHeight - mc.scrollTop - mc.clientHeight < 100;
-  typing.innerHTML = '<div class="message-avatar"><img src="app-icon.jpg" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
+  var typingAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
+  typing.innerHTML = '<div class="message-avatar"><img src="' + typingAvatarSrc + '" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
     '<div class="message-body">' + renderMarkdown(content) + '</div>';
   /* 只有用户在底部时才自动滚动 */
   if (isNearBottom) mc.scrollTop = mc.scrollHeight;
@@ -3139,6 +3446,7 @@ function refreshSettingsForm() {
   var navItems = [
     { id: 'general', label: '通用设置', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82.09L15 19.4"/></svg>' },
     { id: 'model', label: '模型配置', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>' },
+    { id: 'appearance', label: '自定义外观', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><line x1="2" y1="12" x2="22" y2="12"/></svg>' },
     { id: 'security', label: '安全设置', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' },
     { id: 'about', label: '关于', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>' }
   ];
@@ -3149,6 +3457,7 @@ function refreshSettingsForm() {
     '<div class="settings-content">' +
     '<div class="settings-section active" id="settingsGeneral">' + renderGeneralSettings() + '</div>' +
     '<div class="settings-section" id="settingsModel">' + renderModelSettings() + '</div>' +
+    '<div class="settings-section" id="settingsAppearance">' + renderAppearanceSettings() + '</div>' +
     '<div class="settings-section" id="settingsSecurity">' + renderSecuritySettings() + '</div>' +
     '<div class="settings-section" id="settingsAbout">' + renderAboutSettings() + '</div>' +
     '</div>';
@@ -3160,7 +3469,7 @@ function switchSettingsTab(tab) {
     el.classList.toggle('active', el.getAttribute('data-tab') === tab);
   });
   document.querySelectorAll('.settings-section').forEach(function(el) { el.classList.remove('active'); });
-  var sectionMap = { general: 'settingsGeneral', model: 'settingsModel', security: 'settingsSecurity', about: 'settingsAbout' };
+  var sectionMap = { general: 'settingsGeneral', model: 'settingsModel', appearance: 'settingsAppearance', security: 'settingsSecurity', about: 'settingsAbout' };
   var section = document.getElementById(sectionMap[tab]);
   if (section) section.classList.add('active');
 }
@@ -3175,6 +3484,8 @@ function renderGeneralSettings() {
     '<input type="text" class="setting-input" id="cfgWorkDir" value="' + escapeHtml(workDir) + '" placeholder="未设置" style="flex:1;min-width:0" readonly>' +
     '<button onclick="selectWorkFolder()" style="padding:4px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">浏览</button>' +
     '</div></div>' +
+    '<div class="setting-row"><div><div class="setting-label">AI 文件操作区域</div><div class="setting-desc">AI 智能体读写文件的允许范围，基于输出目录设置</div></div>' +
+    '<div style="font-size:12px;color:var(--muted);padding:6px 10px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--line);word-break:break-all;max-width:300px">' + escapeHtml(workDir || '桌面 (默认)') + '</div></div>' +
     '<div class="setting-row"><div><div class="setting-label">自动保存对话</div><div class="setting-desc">每次AI回复后自动保存到工作文件夹</div></div>' +
     '<label style="cursor:pointer;display:flex;align-items:center;gap:6px">' +
     '<input type="checkbox" id="cfgAutoSave" ' + (config.auto_save !== false ? 'checked' : '') + ' onchange="config.auto_save=this.checked;try{localStorage.setItem(\'sf-config\',JSON.stringify(config))}catch(e){}">' +
@@ -3212,13 +3523,48 @@ function renderModelSettings() {
     '<button class="save-btn" onclick="saveConfig()">保存设置</button>';
 }
 
+function renderAppearanceSettings() {
+  var logoSrc = customAppearance.logo || '';
+  var avatarSrc = customAppearance.avatar || '';
+  var aiAvatarSrc = customAppearance.aiAvatar || '';
+  return '<h2>自定义外观</h2><p class="settings-section-desc">自定义应用图标和头像</p>' +
+    '<div class="setting-group"><div class="setting-group-title">左上角图标</div>' +
+    '<div class="appearance-upload-row">' +
+    '<img class="appearance-preview" id="previewLogo" src="' + logoSrc + '">' +
+    '<div>' +
+    '<input type="file" id="uploadLogo" accept="image/*" style="display:none" onchange="handleAppearanceUpload(\'logo\',this)">' +
+    '<label class="upload-btn" for="uploadLogo">上传图标</label>' +
+    '<div style="font-size:11px;color:var(--faint);margin-top:4px">建议尺寸: 48x48 PNG</div>' +
+    '</div></div></div>' +
+    '<div class="setting-group"><div class="setting-group-title">用户头像</div>' +
+    '<div class="appearance-upload-row">' +
+    '<img class="appearance-preview" id="previewAvatar" src="' + avatarSrc + '">' +
+    '<div>' +
+    '<input type="file" id="uploadAvatar" accept="image/*" style="display:none" onchange="handleAppearanceUpload(\'avatar\',this)">' +
+    '<label class="upload-btn" for="uploadAvatar">上传头像</label>' +
+    '<div style="font-size:11px;color:var(--faint);margin-top:4px">用于用户消息的头像显示</div>' +
+    '</div></div></div>' +
+    '<div class="setting-group"><div class="setting-group-title">AI 头像</div>' +
+    '<div class="appearance-upload-row">' +
+    '<img class="appearance-preview" id="previewAiAvatar" src="' + aiAvatarSrc + '">' +
+    '<div>' +
+    '<input type="file" id="uploadAiAvatar" accept="image/*" style="display:none" onchange="handleAppearanceUpload(\'ai-avatar\',this)">' +
+    '<label class="upload-btn" for="uploadAiAvatar">上传头像</label>' +
+    '<div style="font-size:11px;color:var(--faint);margin-top:4px">用于AI助手消息的头像显示</div>' +
+    '</div></div></div>' +
+    '<div class="setting-group"><div class="setting-group-title">恢复默认</div>' +
+    '<button class="save-btn" onclick="resetAppearanceDefaults()" style="background:var(--danger);color:#fff">恢复默认图标</button></div>';
+}
+
 function renderSecuritySettings() {
   return '<h2>安全设置</h2><p class="settings-section-desc">管理AI执行权限</p>' +
     '<div class="setting-group"><div class="setting-group-title">工具权限</div>' +
     '<div class="setting-row"><div><div class="setting-label">工具调用权限</div><div class="setting-desc">允许AI自动执行工具调用</div></div>' +
     '<label class="toggle-switch"><input type="checkbox" id="cfgToolPermission" ' + (config.tool_permission !== false ? 'checked' : '') + '><span class="toggle-slider"></span></label></div>' +
     '<div class="setting-row"><div><div class="setting-label">文件写入权限</div><div class="setting-desc">允许AI写入文件到项目目录</div></div>' +
-    '<label class="toggle-switch"><input type="checkbox" id="cfgWritePermission" ' + (config.write_permission !== false ? 'checked' : '') + '><span class="toggle-slider"></span></label></div></div>' +
+    '<label class="toggle-switch"><input type="checkbox" id="cfgWritePermission" ' + (config.write_permission !== false ? 'checked' : '') + '><span class="toggle-slider"></span></label></div>' +
+    '<div class="setting-row"><div><div class="setting-label">允许 AI 操作文件</div><div class="setting-desc">允许AI读取/写入/删除工作目录中的文件</div></div>' +
+    '<label class="toggle-switch"><input type="checkbox" id="cfgAllowFileOps" ' + (config.allow_file_ops !== false ? 'checked' : '') + ' onchange="config.allow_file_ops=this.checked;try{localStorage.setItem(\'sf-config\',JSON.stringify(config))}catch(e){}"><span class="toggle-slider"></span></label></div></div>' +
     '<button class="save-btn" onclick="saveConfig()">保存设置</button>';
 }
 
@@ -3277,7 +3623,8 @@ function checkForUpdate() {
         status.innerHTML = '<div style="background:#ddf4ff;border:1px solid #0969da;border-radius:8px;padding:12px 16px;margin-top:6px;max-width:320px">' +
           '<div style="font-size:16px;font-weight:600;color:#0969da;margin-bottom:6px">发现新版本 v' + d.latestVersion + '</div>' +
           (d.releaseNotes ? '<div style="font-size:12px;color:var(--text);margin-bottom:10px;line-height:1.5">' + d.releaseNotes + '</div>' : '') +
-          (d.downloadUrl ? '<a href="' + d.downloadUrl + '" target="_blank" style="display:inline-block;padding:8px 20px;background:#0969da;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">立即下载</a>' : '') +
+          (d.downloadUrl ? '<a href="' + d.downloadUrl + '" target="_blank" style="display:inline-block;padding:8px 20px;background:#0969da;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">GitHub 下载</a>' +
+          '<a href="' + d.downloadUrl.replace('github.com', 'ghfast.top') + '" target="_blank" style="display:inline-block;margin-left:8px;padding:8px 20px;background:#2ea44f;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">加速下载</a>' : '') +
           '</div>';
       } else {
         status.textContent = '已是最新版本';
@@ -3345,7 +3692,7 @@ function loadConfig() {
       config = d || {};
       if (!config.model_name && config.model) config.model_name = config.model;
       addLog('配置已加载');
-      var mm = document.getElementById('chatModelMeta');
+      var mm = document.getElementById('chatModelName');
       if (mm) mm.textContent = config.model_name || config.model || '模型未配置';
     })
     .catch(function (e) { addLog('加载配置失败: ' + e.message); });
@@ -3385,7 +3732,7 @@ function saveConfig() {
       config = d || newConfig;
       if (!config.model_name && config.model) config.model_name = config.model;
       addLog('配置已保存');
-      var meta = document.getElementById('chatModelMeta');
+      var meta = document.getElementById('chatModelName');
       if (meta) meta.textContent = config.model_name || config.model || '模型未配置';
       var btn = document.querySelector('.save-btn');
       if (btn) { btn.disabled = false; btn.textContent = '已保存'; setTimeout(function(){ btn.textContent = '保存设置'; }, 1500); }
@@ -3590,6 +3937,55 @@ async function selectWorkFolder() {
     config.work_dir = folder;
     try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
     addLog('工作文件夹已设置: ' + folder);
+  }
+}
+
+/* ===== AI 文件操作权限系统 ===== */
+var _fsPermissionResolve = null;
+
+function requestFsPermission(action, targetPath) {
+  return new Promise(function(resolve) {
+    _fsPermissionResolve = resolve;
+    var dialog = document.getElementById('fsPermissionDialog');
+    dialog.style.display = 'flex';
+    document.getElementById('fsPermissionText').textContent =
+      'AI 智能体请求执行操作：' + action + '\n目标路径：' + targetPath;
+  });
+}
+
+function allowFsPermission() {
+  document.getElementById('fsPermissionDialog').style.display = 'none';
+  if (_fsPermissionResolve) { _fsPermissionResolve(true); _fsPermissionResolve = null; }
+}
+
+function denyFsPermission() {
+  document.getElementById('fsPermissionDialog').style.display = 'none';
+  if (_fsPermissionResolve) { _fsPermissionResolve(false); _fsPermissionResolve = null; }
+}
+
+async function executeFsAction(action, params) {
+  var actionLabels = {
+    'fs_list': '列出目录内容',
+    'fs_read': '读取文件',
+    'fs_write': '写入/创建文件',
+    'fs_delete': '删除文件',
+    'fs_search': '搜索文件',
+    'fs_mkdir': '创建目录',
+    'fs_info': '获取文件信息'
+  };
+  var targetPath = params.path || params.directory || '(工作区域)';
+  var label = actionLabels[action] || action;
+  var permitted = await requestFsPermission(label, targetPath);
+  if (!permitted) return { success: false, error: '用户拒绝了操作' };
+  try {
+    var resp = await fetch('/api/fs/' + action.replace('fs_', ''), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    return await resp.json();
+  } catch(e) {
+    return { success: false, error: e.message };
   }
 }
 
@@ -3941,5 +4337,15 @@ function initResize(handleId, panelId, side) {
   });
 }
 </script>
+<div id="fsPermissionDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:var(--bg-secondary);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+    <h3 style="margin:0 0 8px;font-size:16px;color:var(--text)">文件操作请求</h3>
+    <p id="fsPermissionText" style="font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.5;white-space:pre-wrap"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="denyFsPermission()" style="padding:6px 16px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px">拒绝</button>
+      <button onclick="allowFsPermission()" style="padding:6px 16px;border:none;border-radius:6px;background:#0969da;color:#fff;cursor:pointer;font-size:13px">允许</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
