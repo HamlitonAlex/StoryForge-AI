@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
@@ -103,6 +103,32 @@ function createWindow() {
     app.quit();
   });
 }
+
+// ===== IPC: 文件夹选择和文件写入 =====
+ipcMain.handle('select-folder', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory'],
+    title: '选择工作文件夹'
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('save-file', async (event, { filePath, content }) => {
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { success: true, path: filePath };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('get-version', () => {
+  try { return require('./package.json').version; } catch(e) { return '3.2.0'; }
+});
 
 const menu = Menu.buildFromTemplate([
   { label: '视图', submenu: [

@@ -1155,6 +1155,9 @@ a{color:var(--accent);text-decoration:none}
   <div class="chat-panel-header">
     <span class="chat-panel-title">对话</span>
     <div class="chat-panel-header-actions">
+      <button class="chat-panel-icon-btn" onclick="exportAllConversations()" title="导出全部对话">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><polyline points="9 14 12 17 15 14"/></svg>
+      </button>
       <button class="chat-panel-icon-btn" onclick="clearAllConversations()" title="清空全部对话">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
@@ -1256,7 +1259,8 @@ a{color:var(--accent);text-decoration:none}
         <button class="icon-btn" onclick="toggleRightPanel()" title="工作区" id="workspaceToggleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg></button>
         <input type="text" class="chat-title-input" id="chatTitleInput" value="新对话">
         <span class="chat-meta" id="chatModelMeta">模型未配置</span>
-        <button class="icon-btn" onclick="exportChat()" title="导出对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+        <button class="icon-btn" onclick="exportChatToFolder()" title="导出到文件夹"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
+        <button class="icon-btn" onclick="exportChat()" title="下载对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="icon-btn" onclick="clearCurrentChat()" title="清空对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
       <div class="chat-messages" id="chatMessages"></div>
@@ -1608,6 +1612,20 @@ function addLog(msg) {
   d.innerHTML = '<span class="log-time">' + t + '</span>' + escapeHtml(msg);
   c.insertBefore(d, c.firstChild);
   if (c.children.length > 100) c.removeChild(c.lastChild);
+}
+
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--bg-tertiary);color:var(--text);padding:8px 20px;border-radius:8px;font-size:13px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.3s;pointer-events:none;border:1px solid var(--line)';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.style.opacity = '0'; }, 3000);
 }
 
 /* 键盘快捷键 */
@@ -3023,7 +3041,14 @@ function switchSettingsTab(tab) {
 
 function renderGeneralSettings() {
   var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  var workDir = config.work_dir || '';
   return '<h2>通用设置</h2><p class="settings-section-desc">基础应用配置</p>' +
+    '<div class="setting-group"><div class="setting-group-title">工作文件夹</div>' +
+    '<div class="setting-row"><div><div class="setting-label">输出目录</div><div class="setting-desc">对话导出和资产保存的本地文件夹</div></div>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+    '<input type="text" class="setting-input" id="cfgWorkDir" value="' + escapeHtml(workDir) + '" placeholder="未设置" style="flex:1;min-width:0" readonly>' +
+    '<button onclick="selectWorkFolder()" style="padding:4px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap">浏览</button>' +
+    '</div></div></div>' +
     '<div class="setting-group"><div class="setting-group-title">界面</div>' +
     '<div class="setting-row"><div><div class="setting-label">主题</div><div class="setting-desc">深色/浅色模式切换</div></div>' +
     '<label class="toggle-switch"><input type="checkbox" id="cfgTheme" ' + (isDark ? 'checked' : '') + ' onchange="toggleThemeFromSettings(this.checked)"><span class="toggle-slider"></span></label></div>' +
@@ -3423,6 +3448,126 @@ function exportChat() {
   a.click();
   URL.revokeObjectURL(a.href);
   addLog('对话已导出');
+}
+
+/* ===== 工作文件夹与本地导出 ===== */
+async function selectWorkFolder() {
+  if (typeof electronAPI === 'undefined' || !electronAPI.selectFolder) {
+    alert('请在桌面应用中使用此功能');
+    return;
+  }
+  var folder = await electronAPI.selectFolder();
+  if (folder) {
+    var input = document.getElementById('cfgWorkDir');
+    if (input) input.value = folder;
+    config.work_dir = folder;
+    try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+    addLog('工作文件夹已设置: ' + folder);
+  }
+}
+
+async function exportChatToFolder() {
+  if (!chatHistory || chatHistory.length === 0) { showToast('当前没有对话内容'); return; }
+  var workDir = config.work_dir;
+  if (!workDir) {
+    if (typeof electronAPI !== 'undefined' && electronAPI.selectFolder) {
+      workDir = await electronAPI.selectFolder();
+      if (!workDir) return;
+      config.work_dir = workDir;
+      var input = document.getElementById('cfgWorkDir');
+      if (input) input.value = workDir;
+      try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+    } else {
+      showToast('请先在设置中配置工作文件夹'); return;
+    }
+  }
+
+  var title = document.getElementById('chatTitleInput').value || '对话';
+  var safeName = title.replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+  var timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+
+  // 导出 Markdown
+  var md = '# ' + title + '\n\n> 导出时间: ' + new Date().toLocaleString() + '\n\n---\n\n';
+  chatHistory.forEach(function(m) {
+    var role = m.role === 'user' ? '## 👤 用户' : '## 🤖 助手';
+    md += role + '\n\n' + (m.content || '') + '\n\n---\n\n';
+  });
+
+  // 导出 JSON
+  var json = JSON.stringify({
+    title: title,
+    conversation_id: currentConversationId,
+    exported_at: new Date().toISOString(),
+    messages: chatHistory
+  }, null, 2);
+
+  var mdName = safeName + '_' + timestamp + '.md';
+  var jsonName = safeName + '_' + timestamp + '.json';
+
+  if (typeof electronAPI !== 'undefined' && electronAPI.saveFile) {
+    var r1 = await electronAPI.saveFile(workDir + '/对话/' + mdName, md);
+    var r2 = await electronAPI.saveFile(workDir + '/对话/' + jsonName, json);
+    if (r1.success && r2.success) {
+      showToast('已导出到: ' + workDir + '/对话/');
+    } else {
+      showToast('导出失败: ' + (r1.error || r2.error));
+    }
+  } else {
+    showToast('请在桌面应用中使用此功能');
+  }
+}
+
+async function exportAllConversations() {
+  if (!conversations || conversations.length === 0) { showToast('没有对话可导出'); return; }
+  var workDir = config.work_dir;
+  if (!workDir) {
+    if (typeof electronAPI !== 'undefined' && electronAPI.selectFolder) {
+      workDir = await electronAPI.selectFolder();
+      if (!workDir) return;
+      config.work_dir = workDir;
+    } else {
+      showToast('请先在设置中配置工作文件夹'); return;
+    }
+  }
+
+  var exported = 0;
+  var errors = 0;
+
+  for (var i = 0; i < conversations.length; i++) {
+    var conv = conversations[i];
+    try {
+      // 通过 API 获取消息
+      var resp = await fetch('/api/conversations/' + conv.id + '/messages');
+      if (!resp.ok) { errors++; continue; }
+      var messages = await resp.json();
+
+      var title = conv.title || conv.full_title || '对话';
+      var safeName = title.replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+
+      var md = '# ' + title + '\n\n> 创建时间: ' + (conv.created_at || '') + '\n> 导出时间: ' + new Date().toLocaleString() + '\n\n---\n\n';
+      messages.forEach(function(m) {
+        var role = m.role === 'user' ? '## 👤 用户' : '## 🤖 助手';
+        md += role + '\n\n' + (m.content || '') + '\n\n---\n\n';
+      });
+
+      var json = JSON.stringify({
+        title: title,
+        conversation_id: conv.id,
+        created_at: conv.created_at,
+        exported_at: new Date().toISOString(),
+        messages: messages
+      }, null, 2);
+
+      if (typeof electronAPI !== 'undefined' && electronAPI.saveFile) {
+        var r1 = await electronAPI.saveFile(workDir + '/对话/' + safeName + '.md', md);
+        var r2 = await electronAPI.saveFile(workDir + '/对话/' + safeName + '.json', json);
+        if (r1.success && r2.success) exported++;
+        else errors++;
+      }
+    } catch(e) { errors++; }
+  }
+
+  showToast('导出完成: ' + exported + ' 个成功, ' + errors + ' 个失败');
 }
 
 function clearCurrentChat() {
