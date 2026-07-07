@@ -522,22 +522,20 @@ async function agentChat(userMessage, conversationId, history, files, config, se
    args: {"project_id":"项目ID"}
 4. generate_image - 生成图片
    args: {"prompt":"图片提示词","size":"1024x1024或1792x1024"}
-5. create_project - 创建新项目
-   args: {"name":"项目名","description":"描述"}
-6. question - 向用户确认
+5. question - 向用户确认
    args: {"question":"确认问题","options":["选项1","选项2"]}
 
-7. fs_list - 列出目录内容
+6. fs_list - 列出目录内容
    args: {"path":"目录路径"}
-8. fs_read - 读取文件内容
+7. fs_read - 读取文件内容
    args: {"path":"文件路径"}
-9. fs_write - 写入/创建文件
+8. fs_write - 写入/创建文件
    args: {"path":"文件路径","content":"文件内容"}
-10. fs_search - 搜索文件
+9. fs_search - 搜索文件
     args: {"directory":"目录路径","pattern":"搜索模式(如*.txt)"}
-11. fs_delete - 删除文件或目录
+10. fs_delete - 删除文件或目录
     args: {"path":"文件/目录路径"}
-12. fs_info - 获取文件信息
+11. fs_info - 获取文件信息
     args: {"path":"文件路径"}
 
 文件系统工具的操作范围：${getAllowedBaseDir()}
@@ -652,24 +650,6 @@ async function executeToolCalls(calls, config) {
         case 'generate_image': {
           const imgResult = await generateImage(call.args.prompt, call.args.size || '1024x1024', config);
           result = { ok: true, message: '图片已生成', image: imgResult };
-          break;
-        }
-        case 'create_project': {
-          const projects = loadProjects();
-          const id = genId();
-          const proj = {
-            id, name: call.args.name || '新项目',
-            description: call.args.description || '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          projects.push(proj);
-          saveProjects(projects);
-          const projDir = path.join(BASE_DIR, 'projects', id);
-          [projDir, path.join(projDir, 'assets')].forEach(d => {
-            if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-          });
-          result = { ok: true, project: proj };
           break;
         }
         case 'question':
