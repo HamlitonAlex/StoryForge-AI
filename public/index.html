@@ -1465,6 +1465,15 @@ a{color:var(--accent);text-decoration:none}
         <div id="localFileContent" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;max-height:400px;overflow:auto;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all;font-family:'Consolas','Monaco',monospace;color:var(--text)"></div>
       </div>
     </div>
+    <div class="workspace-section" style="margin-top:12px">
+      <div class="workspace-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>AI 产物</span>
+        <span id="outputCount" style="font-size:11px;color:var(--muted)">0 项</span>
+      </div>
+      <div id="outputList" style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
+        <div style="padding:8px;font-size:12px;color:var(--muted);text-align:center">暂无产物</div>
+      </div>
+    </div>
     <div class="workspace-section">
       <div class="workspace-section-title">当前项目</div>
       <div class="project-selector">
@@ -1635,6 +1644,91 @@ function loadAll() {
 function escapeHtml(s) {
   if (!s) return '';
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ===== AI 产物管理 ===== */
+var _outputArtifacts = []; // { id, name, type, content, timestamp }
+
+function addOutputArtifact(name, type, content) {
+  var artifact = {
+    id: 'art_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    name: name,
+    type: type || 'text', // text, markdown, json, image
+    content: content,
+    timestamp: new Date().toISOString()
+  };
+  _outputArtifacts.push(artifact);
+  renderOutputList();
+  
+  // Auto-save to work folder
+  if (config.work_dir && config.auto_save !== false) {
+    saveArtifactToDisk(artifact);
+  }
+  return artifact;
+}
+
+function renderOutputList() {
+  var list = document.getElementById('outputList');
+  var count = document.getElementById('outputCount');
+  if (!list) return;
+  if (count) count.textContent = _outputArtifacts.length + ' 项';
+  
+  if (_outputArtifacts.length === 0) {
+    list.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--muted);text-align:center">暂无产物</div>';
+    return;
+  }
+  
+  var html = '';
+  _outputArtifacts.slice().reverse().forEach(function(a) {
+    var typeLabel = { text: '文本', markdown: 'MD', json: 'JSON', image: '图片' }[a.type] || '文件';
+    var savedLabel = a.saved ? '✓' : '';
+    html += '<div onclick="previewArtifact(\'' + a.id + '\')" style="padding:6px 8px;border:1px solid var(--line);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;background:var(--bg-secondary)">' +
+      '<span style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + escapeHtml(a.name) + '</span>' +
+      '<span style="font-size:10px;color:var(--muted);flex-shrink:0">' + typeLabel + ' ' + savedLabel + '</span></div>';
+  });
+  list.innerHTML = html;
+}
+
+function previewArtifact(id) {
+  var artifact = _outputArtifacts.find(function(a) { return a.id === id; });
+  if (!artifact) return;
+  
+  // Show in the local file preview area
+  var preview = document.getElementById('localFilePreview');
+  var fileName = document.getElementById('localFileName');
+  var content = document.getElementById('localFileContent');
+  if (!preview || !content) return;
+  
+  preview.style.display = 'block';
+  fileName.textContent = artifact.name;
+  
+  if (artifact.type === 'image') {
+    content.innerHTML = '<img src="' + artifact.content + '" style="max-width:100%;border-radius:4px">';
+    content.style.whiteSpace = '';
+  } else {
+    content.textContent = artifact.content;
+    content.style.whiteSpace = 'pre-wrap';
+  }
+}
+
+async function saveArtifactToDisk(artifact) {
+  if (typeof electronAPI === 'undefined' || !electronAPI.saveFile) return;
+  var safeName = artifact.name.replace(/[\\/:*?"<>|]/g, '_').substring(0, 80);
+  var dir = config.work_dir + '/AI产物';
+  var ext = { text: '.txt', markdown: '.md', json: '.json', image: '.txt' }[artifact.type] || '.txt';
+  electronAPI.saveFile(dir + '/' + safeName + ext, artifact.content).then(function(r) {
+    if (r && r.success) {
+      artifact.saved = true;
+      renderOutputList();
+    }
+  });
+}
+
+function clearArtifacts() {
+  _outputArtifacts = [];
+  renderOutputList();
+  var preview = document.getElementById('localFilePreview');
+  if (preview) preview.style.display = 'none';
 }
 
 function formatDate(d) {
@@ -2921,6 +3015,17 @@ function doSendMessage(msg) {
                   logDiv.style.cssText = 'padding:4px 0;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)';
                   logDiv.textContent = '工具执行完成: ' + (data.results || []).map(function(r) { return r.name + ':' + (r.result && r.result.ok ? '成功' : '失败'); }).join(', ');
                   sidebar.appendChild(logDiv);
+                }
+                // Auto-create artifacts from tool results
+                if (data.results) {
+                  data.results.forEach(function(r) {
+                    if (r.name === 'fs_write' && r.result && r.result.ok) {
+                      addOutputArtifact(r.args.path.split(/[\\/]/).pop(), 'text', r.args.content || '');
+                    }
+                    if (r.name === 'fs_read' && r.result && r.result.ok && r.result.content) {
+                      addOutputArtifact(r.args.path.split(/[\\/]/).pop(), 'text', r.result.content);
+                    }
+                  });
                 }
               }
               if (data.type === 'tool_error') {
