@@ -1,6 +1,6 @@
 {
   "name": "storyforge-ai",
-  "version": "4.0.7",
+  "version": "4.1.0",
   "description": "StoryForge AI - 基于Mx-Shell提示词模板体系的AI短剧创作Agent",
   "main": "main.js",
   "scripts": {
