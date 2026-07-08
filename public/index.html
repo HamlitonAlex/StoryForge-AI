@@ -3517,6 +3517,19 @@ function doSendMessage(msg) {
     var assistantContent = '';
     var tcContainer = null; // tool calls shown inline in message
     streamAbortController = new AbortController();
+    // Watchdog timer - abort if no data for 45 seconds
+    var streamWatchdog = null;
+    function resetWatchdog() {
+      if (streamWatchdog) clearTimeout(streamWatchdog);
+      streamWatchdog = setTimeout(function() {
+        if (isGenerating && !streamAbortController.signal.aborted) {
+          addLog('流式响应超时(45s)，自动结束');
+          finishGeneration(assistantContent); assistantContent = '';
+          if (streamAbortController) streamAbortController.abort();
+        }
+      }, 45000);
+    }
+    resetWatchdog();
     fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: msg, conversation_id: currentConversationId, history: chatHistory.slice(0, -1), files: uploadedFiles || [], skills: getSelectedSkills() }),
@@ -3539,8 +3552,8 @@ function doSendMessage(msg) {
             if (dataStr === '[DONE]') { finishGeneration(assistantContent); assistantContent = ''; return; }
             try {
               var data = JSON.parse(dataStr);
-              if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
-              if (data.type === 'tool_calls' && data.calls) {
+              if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); resetWatchdog(); }
+              if (data.type === 'tool_calls' && data.calls) { resetWatchdog();
                 var toolDiv = document.createElement('div');
                 toolDiv.className = 'tool-calls-inline';
                 toolDiv.style.cssText = 'margin:6px 24px;display:flex;flex-direction:column;gap:2px';
@@ -3551,6 +3564,8 @@ function doSendMessage(msg) {
                   var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', question:'用户确认' }[call.name] || call.name;
                   card.innerHTML = '<span style="color:var(--muted);flex-shrink:0">&#9889;</span><span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:var(--muted);font-size:10px;flex-shrink:0">加载中</span>';
                   toolDiv.appendChild(card);
+                  // Auto-fail after 10 seconds if still loading
+                  (function(cardRef){ setTimeout(function(){ var st = cardRef.querySelector('.tool-call-status'); if(st && st.textContent === '加载中'){ st.textContent = '超时'; st.style.color = '#e67e22'; } }, 10000); })(card);
                   if (call.name === 'question' && call.args && call.args.options) {
                     renderQuestionButtons(call.args.question, call.args.options);
                   }
@@ -3558,7 +3573,7 @@ function doSendMessage(msg) {
                 mc.appendChild(toolDiv);
                 mc.scrollTop = mc.scrollHeight;
               }
-              if (data.type === 'tool_results') {
+              if (data.type === 'tool_results') { resetWatchdog();
                 if (data.results) {
                   data.results.forEach(function(r, idx) {
                     var card = document.getElementById('tool-card-' + idx);
@@ -3698,6 +3713,7 @@ var TRUNCATION_MARKER = '[内容较长，已截断显示]';
 
 function finishGeneration(content) {
   isGenerating = false; streamAbortController = null;
+  if (typeof streamWatchdog !== 'undefined' && streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) {
     sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';

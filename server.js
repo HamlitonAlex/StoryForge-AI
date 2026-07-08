@@ -618,9 +618,10 @@ function extractToolCalls(text) {
 
 async function executeToolCalls(calls, config) {
   const results = [];
+  const TOOL_TIMEOUT = 8000; // 8 seconds per tool
   for (const call of calls) {
     try {
-      let result;
+      const toolPromise = (async () => { let result;
       switch (call.name) {
         case 'save_file': {
           const projDir = path.join(BASE_DIR, 'projects', call.args.project_id);
@@ -742,9 +743,13 @@ async function executeToolCalls(calls, config) {
         default:
           result = { ok: false, message: `未知工具: ${call.name}` };
       }
+      return result; })();
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('工具执行超时')), TOOL_TIMEOUT));
+      const result = await Promise.race([toolPromise, timeoutPromise]);
       results.push({ name: call.name, args: call.args, result });
     } catch(e) {
-      results.push({ name: call.name, args: call.args, result: { ok: false, message: e.message } });
+      console.error(`[Tool] ${call.name} failed:`, e.message);
+      results.push({ name: call.name, args: call.args, result: { ok: false, message: e.message || '工具执行异常' } });
     }
   }
   return results;
@@ -1247,11 +1252,11 @@ const server = http.createServer(async (req, res) => {
             // Timeout for tool follow-up call (30 seconds)
             var followUpTimeout = setTimeout(() => {
               if (!res.writableEnded) {
-                console.error('[SSE] Tool follow-up timed out after 30s');
+                console.error('[SSE] Tool follow-up timed out after 60s');
                 res.write('data: [DONE]\n\n');
                 res.end();
               }
-            }, 30000);
+            }, 60000);
             agentChat(followUpPrompt, body.conversation_id, historyForFollowUp, body.files || [], config, body.skills || null).then(llmRes2 => {
               let fullText2 = '', buffer2 = '';
               llmRes2.on('data', (chunk) => {
