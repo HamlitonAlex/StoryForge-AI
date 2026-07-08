@@ -898,8 +898,9 @@ a{color:var(--accent);text-decoration:none}
 .settings-nav-item.active{background:var(--soft-2);color:var(--text);border-left-color:var(--strong);font-weight:600}
 .settings-nav-item svg{width:16px;height:16px}
 .settings-content{flex:1;overflow-y:auto;padding:32px 40px;max-width:680px}
-.settings-section{display:none}
-.settings-section.active{display:block}
+/* Old settings sections (deprecated) - hidden by default */
+.settings-view .settings-section{display:none}
+.settings-view .settings-section.active{display:block}
 .settings-section h2{font-size:20px;font-weight:700;margin-bottom:4px;letter-spacing:-0.02em}
 .settings-section-desc{font-size:13px;color:var(--faint);margin-bottom:28px}
 .setting-group{margin-bottom:28px}
