@@ -3516,6 +3516,8 @@ function doSendMessage(msg) {
     }
     var assistantContent = '';
     var tcContainer = null; // tool calls shown inline in message
+    var toolCallRounds = 0; // FIX: track tool call rounds to prevent infinite loops
+    var _toolCardCounter = 0; // FIX: global counter for unique tool card IDs
     streamAbortController = new AbortController();
     // Watchdog timer - abort if no data for 45 seconds
     var streamWatchdog = null;
@@ -3554,29 +3556,77 @@ function doSendMessage(msg) {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); resetWatchdog(); }
               if (data.type === 'tool_calls' && data.calls) { resetWatchdog();
+                toolCallRounds++;
+                // FIX: Force stop if too many tool rounds to prevent infinite loops
+                if (toolCallRounds > 3) {
+                  addLog('工具调用轮次已达上限(' + toolCallRounds + ')，强制结束');
+                  finishGeneration(assistantContent); assistantContent = '';
+                  return;
+                }
+                // FIX: Create a new toolDiv for each batch, with unique ID
+                if (!window._chatToolDivCounter) window._chatToolDivCounter = 0;
+                var _divKey = 'chatToolCalls_batch_' + (++window._chatToolDivCounter);
                 var toolDiv = document.createElement('div');
+                toolDiv.id = _divKey;
                 toolDiv.className = 'tool-calls-inline';
                 toolDiv.style.cssText = 'margin:6px 24px;display:flex;flex-direction:column;gap:2px';
+                mc.appendChild(toolDiv);
+                var _callIds = []; // Track card IDs for this batch
                 data.calls.forEach(function(call, idx) {
-                  var card = document.createElement('div');
-                  card.id = 'tool-card-' + idx;
-                  card.style.cssText = 'display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:4px;font-size:11px;max-height:28px;overflow:hidden;transition:max-height 0.2s';
                   var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', question:'用户确认' }[call.name] || call.name;
+                  // FIX 5: Aggregate duplicate tool calls - check if last card has same displayName
+                  var lastCard = toolDiv.lastElementChild;
+                  var lastDisplayName = lastCard ? lastCard.getAttribute('data-display-name') : '';
+                  if (lastDisplayName === displayName && lastCard) {
+                    // Increment count on existing card instead of creating new one
+                    var countEl = lastCard.querySelector('.tool-dup-count');
+                    if (countEl) {
+                      var cur = parseInt(countEl.textContent, 10) || 1;
+                      countEl.textContent = 'x' + (cur + 1);
+                      countEl.style.display = '';
+                    } else {
+                      var cnt = document.createElement('span');
+                      cnt.className = 'tool-dup-count';
+                      cnt.style.cssText = 'color:var(--muted);font-size:9px;background:var(--line);border-radius:3px;padding:0 3px;margin-left:2px';
+                      cnt.textContent = 'x2';
+                      lastCard.insertBefore(cnt, lastCard.querySelector('.tool-call-status'));
+                    }
+                    _callIds.push(lastCard.id);
+                    return;
+                  }
+                  // Create new card with unique ID
+                  var card = document.createElement('div');
+                  card.id = 'tool-card-' + (_toolCardCounter++);
+                  card.setAttribute('data-display-name', displayName);
+                  card.style.cssText = 'display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:4px;font-size:11px;max-height:28px;overflow:hidden;transition:max-height 0.2s';
                   card.innerHTML = '<span style="color:var(--muted);flex-shrink:0">&#9889;</span><span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:var(--muted);font-size:10px;flex-shrink:0">加载中</span>';
                   toolDiv.appendChild(card);
+                  _callIds.push(card.id);
                   // Auto-fail after 10 seconds if still loading
                   (function(cardRef){ setTimeout(function(){ var st = cardRef.querySelector('.tool-call-status'); if(st && st.textContent === '加载中'){ st.textContent = '超时'; st.style.color = '#e67e22'; } }, 10000); })(card);
                   if (call.name === 'question' && call.args && call.args.options) {
                     renderQuestionButtons(call.args.question, call.args.options);
                   }
                 });
-                mc.appendChild(toolDiv);
+                // Store call IDs on toolDiv for matching tool_results
+                toolDiv._callIds = _callIds;
                 mc.scrollTop = mc.scrollHeight;
               }
               if (data.type === 'tool_results') { resetWatchdog();
                 if (data.results) {
+                  // FIX: Find the last toolDiv that has _callIds for matching results
+                  var allToolDivs = mc.querySelectorAll('.tool-calls-inline');
+                  var lastToolDiv = null;
+                  for (var tdi = allToolDivs.length - 1; tdi >= 0; tdi--) {
+                    if (allToolDivs[tdi]._callIds) { lastToolDiv = allToolDivs[tdi]; break; }
+                  }
                   data.results.forEach(function(r, idx) {
-                    var card = document.getElementById('tool-card-' + idx);
+                    // Try to find card by _callIds first, then fall back to index-based lookup
+                    var card = null;
+                    if (lastToolDiv && lastToolDiv._callIds && idx < lastToolDiv._callIds.length) {
+                      card = document.getElementById(lastToolDiv._callIds[idx]);
+                    }
+                    if (!card) card = document.getElementById('tool-card-' + idx);
                     if (card) {
                       var st = card.querySelector('.tool-call-status');
                       if (st) {

@@ -100,7 +100,8 @@ function saveConfig(cfg) {
 // ==================== File System Helpers ====================
 function getAllowedBaseDir() {
   const cfg = loadConfig();
-  return cfg.work_dir || path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop');
+  // 优先使用用户配置的工作目录，回退到 BASE_DIR（项目根目录）
+  return cfg.work_dir || BASE_DIR;
 }
 
 function validatePath(requestedPath) {
@@ -539,7 +540,10 @@ async function agentChat(userMessage, conversationId, history, files, config, se
     args: {"path":"文件路径"}
 
 文件系统工具的操作范围：${getAllowedBaseDir()}
-注意：一次回复中可以包含多个工具调用。先输出内容给用户看，再调用工具保存或执行文件操作。`;
+注意：
+1. 一次回复中最多调用5个工具，不要批量调用大量工具。
+2. 如果某个工具调用失败，不要反复重试同一个工具，直接告知用户失败原因即可。
+3. 先输出内容给用户看，再调用工具保存或执行文件操作。`;
 
   const messages = [{ role: 'system', content: systemPrompt }];
   if (history && Array.isArray(history)) {
@@ -613,12 +617,12 @@ function extractToolCalls(text) {
   while ((m = regex.exec(text)) !== null) {
     try { calls.push(JSON.parse(m[1])); } catch(e) {}
   }
-  return calls;
+  return calls.slice(0, 5); // Max 5 tool calls per round to prevent infinite loops
 }
 
 async function executeToolCalls(calls, config) {
   const results = [];
-  const TOOL_TIMEOUT = 8000; // 8 seconds per tool
+  const TOOL_TIMEOUT = 5000; // 5 seconds per tool (reduced from 8s to prevent cascading timeouts)
   for (const call of calls) {
     try {
       const toolPromise = (async () => { let result;
@@ -1267,8 +1271,8 @@ const server = http.createServer(async (req, res) => {
                   if (line.startsWith('data: ')) {
                     const d = line.slice(6).trim();
                     if (d === '[DONE]') {
-                      // Check if there are nested tool calls (max 3 rounds)
-                      if (!isToolRound || isToolRound < 3) {
+                      // Check if there are nested tool calls (max 2 rounds to prevent infinite loops)
+                      if (!isToolRound || isToolRound < 2) {
                         finishSSE(fullText2, (isToolRound || 0) + 1);
                       } else {
                         res.write('data: [DONE]\n\n'); res.end();
@@ -1304,7 +1308,8 @@ const server = http.createServer(async (req, res) => {
                     }
                   }
                 }
-                if (!isToolRound || isToolRound < 3) {
+                // Limit to 2 tool rounds max to prevent infinite loops
+                if (!isToolRound || isToolRound < 2) {
                   finishSSE(fullText2, (isToolRound || 0) + 1);
                 } else {
                   res.write('data: [DONE]\n\n'); res.end();
