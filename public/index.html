@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,28 +11,13 @@
 /* ============================================
    CSS 变量 - GitHub Dark / Light 风格
    ============================================ */
-:root,[data-theme="dark"]{
-  --bg:#0d1117;--bg-base:#0d1117;--sidebar-bg:#0d1117;
-  --card:#161b22;--card-solid:#161b22;
-  --soft:#21262d;--soft-2:#30363d;
-  --text:#e6edf3;--accent:#e6edf3;
-  --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.12);
-  --muted:#8b949e;--faint:#6e7681;
-  --strong:#e6edf3;--strong-text:#0d1117;
-  --danger:#f85149;--ok:#3fb950;
-  --shadow:rgba(0,0,0,0.50);--nav-bg:#0d1117;
-  --sidebar-hover:#161b22;--msg-user:var(--soft-2);--msg-assistant:#161b22;
-  --input-bg:#0d1117;--scrollbar:#30363d;--scrollbar-hover:#484f58;
-  --page:#0d1117;--grid:rgba(255,255,255,0.02);
-  --panel:rgba(22,27,34,0.96);
-  --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
-  --activity-bar-bg:#010409;--chat-panel-bg:#0d1117;--status-bar-bg:#010409;
-  --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
-}
-[data-theme="light"]{
-  --bg:#ffffff;--bg-base:#ffffff;--sidebar-bg:#f6f8fa;
+/* ===== Theme Variables ===== */
+/* Light mode (default) */
+:root,[data-theme="light"]{
+  --bg:#ffffff;--bg-base:#ffffff;--bg-secondary:#f8f9fa;--bg-tertiary:#f0f1f3;
+  --sidebar-bg:#f6f8fa;
   --card:#ffffff;--card-solid:#ffffff;
-  --soft:#f0f0f0;--soft-2:#e8e8e8;
+  --soft:rgba(0,0,0,0.04);--soft-2:rgba(0,0,0,0.08);
   --text:#1f2328;--accent:#1f2328;
   --line:#e0e0e0;--line-2:#d0d0d0;
   --muted:#656d76;--faint:#8c959f;
@@ -46,21 +31,29 @@
   --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
   --activity-bar-bg:#f6f8fa;--chat-panel-bg:#f6f8fa;--status-bar-bg:#f6f8fa;
   --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
+  color-scheme:light;
 }
 
-/* Dark mode variables */
-html[data-theme="dark"] {
-  --bg: #1e1e2e;
-  --bg-secondary: #181825;
-  --bg-sidebar: #181825;
-  --text: #cdd6f4;
-  --muted: #a6adc8;
-  --line: #313244;
-  --faint: #585b70;
-  --soft: rgba(205,214,244,0.04);
-  --accent: #89b4fa;
-  --accent-hover: #b4d0fb;
-  color-scheme: dark;
+/* Dark mode */
+[data-theme="dark"]{
+  --bg:#0d1117;--bg-base:#0d1117;--bg-secondary:#161b22;--bg-tertiary:#21262d;
+  --sidebar-bg:#0d1117;
+  --card:#161b22;--card-solid:#161b22;
+  --soft:rgba(255,255,255,0.04);--soft-2:rgba(255,255,255,0.08);
+  --text:#e6edf3;--accent:#e6edf3;
+  --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.12);
+  --muted:#8b949e;--faint:#6e7681;
+  --strong:#e6edf3;--strong-text:#0d1117;
+  --danger:#f85149;--ok:#3fb950;
+  --shadow:rgba(0,0,0,0.50);--nav-bg:#0d1117;
+  --sidebar-hover:#161b22;--msg-user:var(--soft-2);--msg-assistant:#161b22;
+  --input-bg:#0d1117;--scrollbar:#30363d;--scrollbar-hover:#484f58;
+  --page:#0d1117;--grid:rgba(255,255,255,0.02);
+  --panel:rgba(22,27,34,0.96);
+  --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+  --activity-bar-bg:#010409;--chat-panel-bg:#0d1117;--status-bar-bg:#010409;
+  --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
+  color-scheme:dark;
 }
 
 /* ============================================
@@ -1512,8 +1505,8 @@ a{color:var(--accent);text-decoration:none}
   </div>
   <div class="left-sidebar-footer">
     <button class="icon-btn-sm" id="darkModeToggle" onclick="toggleDarkMode()" title="切换日间/夜间模式">
-      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
     <button class="icon-btn-sm" data-view="settings" onclick="openSettingsFullscreen()" title="设置">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.001 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.023-1.25.42-1.51 1z"/></svg>
@@ -2809,17 +2802,15 @@ function toggleDarkMode() {
   var html = document.documentElement;
   var isDark = html.getAttribute('data-theme') === 'dark';
   if (isDark) {
-    html.removeAttribute('data-theme');
-    document.body.style.background = '';
-    document.body.style.color = '';
+    html.setAttribute('data-theme', 'light');
   } else {
     html.setAttribute('data-theme', 'dark');
   }
-  // Toggle icons
+  // Toggle icons - show sun when dark (to indicate switch to light), moon when light (to indicate switch to dark)
   var moon = document.getElementById('themeIconMoon');
   var sun = document.getElementById('themeIconSun');
-  if (moon) moon.style.display = isDark ? '' : 'none';
-  if (sun) sun.style.display = isDark ? 'none' : '';
+  if (moon) moon.style.display = isDark ? 'none' : '';
+  if (sun) sun.style.display = isDark ? '' : 'none';
   // Save
   try {
     var cfg = JSON.parse(localStorage.getItem('sf-config') || '{}');
