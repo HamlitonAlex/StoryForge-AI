@@ -1075,25 +1075,65 @@ a{color:var(--accent);text-decoration:none}
 .thinking-content{padding:8px 12px;font-size:12px;color:var(--muted);border-left:3px solid #f0883e;max-height:300px;overflow:auto;display:none;background:rgba(240,136,62,0.03)}
 .thinking-block.open .thinking-content{display:block}
 .think-block {
-  margin: 8px 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+  margin: 6px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
 }
-.think-toggle {
-  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
-  cursor: pointer; background: var(--bg-secondary); font-size: 12px;
-  color: var(--muted); user-select: none;
+.think-block .think-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  cursor: pointer;
+  user-select: none;
 }
-.think-toggle:hover { color: var(--text); }
-.think-arrow { transition: transform 0.2s; }
-.think-block.collapsed .think-arrow { transform: rotate(-90deg); }
-.think-block.collapsed .think-content { display: none; }
+.think-block .think-header .think-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.think-block .think-header .think-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+  animation: thinkDotBounce 1.4s ease-in-out infinite both;
+}
+.think-block .think-header .think-dots span:nth-child(2) { animation-delay: 0.16s; }
+.think-block .think-header .think-dots span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes thinkDotBounce {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+.think-block .think-header .think-title {
+  font-size: 13px;
+  color: var(--muted);
+}
+.think-block .think-header .think-count {
+  font-size: 11px;
+  color: var(--faint, #666);
+  margin-left: 2px;
+}
+.think-block .think-header .think-chevron {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.think-block.collapsed .think-chevron {
+  transform: rotate(-90deg);
+}
+.think-block.collapsed .think-content {
+  display: none;
+}
 .think-content {
-  padding: 10px 12px; font-size: 13px; color: var(--muted);
-  line-height: 1.6; border-top: 1px solid var(--line);
-}
-.think-label { font-weight: 500; }
-@keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+  padding: 4px 0 8px 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
 }
 .appearance-preview{width:48px;height:48px;border-radius:var(--radius-md);object-fit:cover;border:2px solid var(--line);background:var(--soft)}
 .appearance-upload-row{display:flex;align-items:center;gap:12px;padding:10px 0}
@@ -2028,9 +2068,10 @@ function processThinkBlocks(html) {
   // Match <think...>content</think or <think...>content (unpaired)
   return html.replace(/<think([^>]*)>([\s\S]*?)(<\/think>|$)/gi, function(match, attrs, content, closeTag) {
     var label = '思考过程';
-    return '<div class="think-block collapsed"><div class="think-toggle" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
-      '<svg class="think-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>' +
-      '<span class="think-label">' + label + '</span></div>' +
+    return '<div class="think-block collapsed"><div class="think-header" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
+      '<span class="think-dots" style="display:none"><span></span><span></span><span></span></span>' +
+      '<span class="think-title">' + label + '</span>' +
+      '<span class="think-chevron" style="transform:rotate(-90deg)">\u25BC</span></div>' +
       '<div class="think-content">' + content + '</div></div>';
   });
 }
@@ -2186,34 +2227,23 @@ function stripEscapeChars(text) {
 /* 清理显示内容：转义字符 + TOOL标签 + XML标签 + 截断标记 */
 function cleanDisplayContent(text) {
   if (!text) return '';
-  return stripEscapeChars(text)
-    // Strip TOOL_CALL blocks
-    .replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '')
-    // Strip TOOL_RESULT blocks
-    .replace(/\[TOOL_RESULT\][\s\S]*?\[\/TOOL_RESULT\]/g, '')
-    // Strip XML-like function tags that some models output
-    .replace(/<function[\s\S]*?<\/function>/gi, '')
-    .replace(/<parameter[\s\S]*?<\/parameter>/gi, '')
-    .replace(/<invoke[\s\S]*?<\/invoke>/gi, '')
-    .replace(/<\/?function>/gi, '')
-    .replace(/<\/?parameter>/gi, '')
-    .replace(/<\/?invoke>/gi, '')
-    .replace(/<anti_threshold>|<\/anti_threshold>/gi, '')
-    // Strip antml namespace tags (generic match)
-    .replace(/<antml:[\w]+[\s\S]*?<\/antml:[\w]+>/gi, '')
-    .replace(/<\/?antml:[\w]+>/gi, '')
-    // Strip think tags
-    .replace(/<think[\s\S]*?<\/think>/gi, '')
-    .replace(/<\/?think>/gi, '')
-    // Strip remaining self-closing XML-like tags
-    .replace(/<\/?\w+:\w+[^>]*\/>/gi, '')
-    // Strip bare JSON-like tool result strings
-    .replace(/\{"ok"\s*:\s*(true|false)[\s\S]*?\}/g, '')
-    // Strip content truncation markers
-    .replace(/\[内容较长，已截断显示\]/g, '')
-    // Clean up multiple blank lines
-    .replace(/\n{4,}/g, '\n\n\n')
-    .trim();
+  var s = stripEscapeChars(text);
+  // Remove TOOL_CALL / TOOL_RESULT blocks
+  s = s.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '');
+  s = s.replace(/\[TOOL_RESULT\][\s\S]*?\[\/TOOL_RESULT\]/g, '');
+  // Remove ALL XML-like tags (open, close, self-closing, with attributes)
+  // This catches <function...>, </function>, <to...>, </to>, <antml:invoke...>, <think...>, etc.
+  s = s.replace(/<\/?[a-zA-Z][a-zA-Z0-9_]*(?::[a-zA-Z][a-zA-Z0-9_]*)?[^>]*\/?>/g, '');
+  // Remove any remaining bare angle brackets that aren't HTML
+  s = s.replace(/</g, '\u2039').replace(/>/g, '\u203a');
+  // Remove JSON-like tool result objects
+  s = s.replace(/\{"ok"\s*:\s*(true|false)[^}]*\}/g, '');
+  s = s.replace(/\{"error"[\s\S]*?\}/g, '');
+  // Remove truncation markers
+  s = s.replace(/\[内容较长，已截断显示\]/g, '');
+  // Clean up multiple blank lines
+  s = s.replace(/\n{4,}/g, '\n\n\n');
+  return s.trim();
 }
 
 /* Markdown 渲染 */
@@ -3161,12 +3191,9 @@ function doSendMessage(msg) {
 }
 
 function updateStreamMessage(content) {
-  // 如果用户已切换对话，不再更新
   if (_generationSessionId && _generationSessionId !== currentConversationId) return;
-  // 移除简单的 typing 指示器（think-box 将取代它）
   var typing = document.getElementById('typingIndicator');
   if (typing) typing.remove();
-  // 查找或创建思考容器
   var thinkBox = document.getElementById('streamingThinkBox');
   if (!thinkBox) {
     var mc = document.getElementById('chatMessages');
@@ -3175,33 +3202,30 @@ function updateStreamMessage(content) {
     thinkBox.id = 'streamingThinkBox';
     thinkBox.className = 'think-block collapsed';
     var header = document.createElement('div');
-    header.className = 'think-toggle';
+    header.className = 'think-header';
     header.onclick = function() {
       thinkBox.classList.toggle('collapsed');
-      var arrow = thinkBox.querySelector('.think-arrow');
-      if (arrow) {
-        if (thinkBox.classList.contains('collapsed')) {
-          arrow.style.transform = 'rotate(-90deg)';
-        } else {
-          arrow.style.transform = 'rotate(0deg)';
-        }
-      }
     };
-    var arrow = document.createElement('svg');
-    arrow.className = 'think-arrow';
-    arrow.setAttribute('viewBox', '0 0 24 24');
-    arrow.setAttribute('fill', 'none');
-    arrow.setAttribute('stroke', 'currentColor');
-    arrow.setAttribute('stroke-width', '2');
-    arrow.setAttribute('width', '14');
-    arrow.setAttribute('height', '14');
-    arrow.style.transform = 'rotate(-90deg)';
-    arrow.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
-    var label = document.createElement('span');
-    label.className = 'think-label';
-    label.textContent = '思考过程';
-    header.appendChild(arrow);
-    header.appendChild(label);
+    // Dots animation
+    var dots = document.createElement('span');
+    dots.className = 'think-dots';
+    dots.innerHTML = '<span></span><span></span><span></span>';
+    header.appendChild(dots);
+    // Title
+    var title = document.createElement('span');
+    title.className = 'think-title';
+    title.textContent = '思考中';
+    header.appendChild(title);
+    // Character count
+    var count = document.createElement('span');
+    count.className = 'think-count';
+    count.id = 'thinkCharCount';
+    header.appendChild(count);
+    // Chevron
+    var chevron = document.createElement('span');
+    chevron.className = 'think-chevron';
+    chevron.textContent = '\u25BC';
+    header.appendChild(chevron);
     var contentDiv = document.createElement('div');
     contentDiv.className = 'think-content';
     contentDiv.id = 'streamingThinkContent';
@@ -3209,12 +3233,18 @@ function updateStreamMessage(content) {
     thinkBox.appendChild(contentDiv);
     mc.appendChild(thinkBox);
   }
-  // 将内容流式写入思考框（展开时可见）
+  // Update character count
+  var countEl = document.getElementById('thinkCharCount');
+  if (countEl) {
+    var len = content.length;
+    if (len > 1000) countEl.textContent = Math.round(len / 1000) + 'k 字';
+    else countEl.textContent = len + ' 字';
+  }
+  // Stream into think content
   var thinkContent = document.getElementById('streamingThinkContent');
   if (thinkContent) {
     thinkContent.innerHTML = renderMarkdown(cleanDisplayContent(content));
     thinkContent.scrollTop = thinkContent.scrollHeight;
-    // 判断用户是否在底部，自动滚动
     var mc = document.getElementById('chatMessages');
     if (mc && mc.scrollHeight - mc.scrollTop - mc.clientHeight < 100) {
       mc.scrollTop = mc.scrollHeight;
@@ -3243,8 +3273,13 @@ function finishGeneration(content) {
   var thinkBox = document.getElementById('streamingThinkBox');
   if (thinkBox) {
     thinkBox.classList.add('collapsed');
-    var arrow = thinkBox.querySelector('.think-arrow');
-    if (arrow) arrow.style.transform = 'rotate(-90deg)';
+    // Update title and stop dots animation
+    var titleEl = thinkBox.querySelector('.think-title');
+    if (titleEl) titleEl.textContent = '已思考';
+    var dotsEl = thinkBox.querySelector('.think-dots');
+    if (dotsEl) dotsEl.style.display = 'none';
+    var chevronEl = thinkBox.querySelector('.think-chevron');
+    if (chevronEl) chevronEl.style.transform = 'rotate(-90deg)';
   }
   if (content) {
     var cleanContent = cleanDisplayContent(content).trim();

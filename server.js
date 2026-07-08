@@ -1244,6 +1244,14 @@ const server = http.createServer(async (req, res) => {
               { role: 'user', content: body.message },
               { role: 'assistant', content: text.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '').trim() }
             ]);
+            // Timeout for tool follow-up call (30 seconds)
+            var followUpTimeout = setTimeout(() => {
+              if (!res.writableEnded) {
+                console.error('[SSE] Tool follow-up timed out after 30s');
+                res.write('data: [DONE]\n\n');
+                res.end();
+              }
+            }, 30000);
             agentChat(followUpPrompt, body.conversation_id, historyForFollowUp, body.files || [], config, body.skills || null).then(llmRes2 => {
               let fullText2 = '', buffer2 = '';
               llmRes2.on('data', (chunk) => {
@@ -1274,6 +1282,7 @@ const server = http.createServer(async (req, res) => {
                 }
               });
               llmRes2.on('end', () => {
+                clearTimeout(followUpTimeout);
                 if (buffer2.trim()) {
                   const leftover = buffer2.trim();
                   if (leftover.startsWith('data: ')) {
@@ -1297,12 +1306,14 @@ const server = http.createServer(async (req, res) => {
                 }
               });
               llmRes2.on('error', (e) => {
+                clearTimeout(followUpTimeout);
                 if (!res.writableEnded) {
                   res.write(`data: ${JSON.stringify({ type: 'error', error: e.message })}\n\n`);
                   res.write('data: [DONE]\n\n'); res.end();
                 }
               });
             }).catch(e => {
+              clearTimeout(followUpTimeout);
               res.write(`data: ${JSON.stringify({ type: 'tool_error', error: e.message })}\n\n`);
               res.write('data: [DONE]\n\n'); res.end();
             });
