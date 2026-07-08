@@ -48,6 +48,21 @@
   --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
 }
 
+/* Dark mode variables */
+html[data-theme="dark"] {
+  --bg: #1e1e2e;
+  --bg-secondary: #181825;
+  --bg-sidebar: #181825;
+  --text: #cdd6f4;
+  --muted: #a6adc8;
+  --line: #313244;
+  --faint: #585b70;
+  --soft: rgba(205,214,244,0.04);
+  --accent: #89b4fa;
+  --accent-hover: #b4d0fb;
+  color-scheme: dark;
+}
+
 /* ============================================
    全局重置
    ============================================ */
@@ -1307,47 +1322,152 @@ a{color:var(--accent);text-decoration:none}
 }
 .layout-pos-btn:hover { border-color: var(--accent); }
 .layout-pos-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; cursor: pointer; font-size: 13px;
+  color: var(--muted); border-radius: 0; transition: background 0.15s;
+}
+.settings-nav-item:hover { background: var(--soft); color: var(--text); }
+.settings-nav-item.active { background: var(--soft); color: var(--text); font-weight: 500; }
+.settings-group { margin-bottom: 24px; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.settings-row label:first-child { font-size: 13px; color: var(--text); }
+.settings-input {
+  flex: 1; margin-left: 12px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg-secondary); color: var(--text); font-size: 13px;
+}
+.settings-toggle {
+  position: relative; display: inline-block; width: 40px; height: 22px;
+}
+.settings-toggle input { opacity: 0; width: 0; height: 0; }
+.settings-toggle-slider {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--faint); border-radius: 11px; cursor: pointer;
+  transition: background 0.2s;
+}
+.settings-toggle-slider::before {
+  content: ""; position: absolute; height: 16px; width: 16px;
+  left: 3px; bottom: 3px; background: white; border-radius: 50%;
+  transition: transform 0.2s;
+}
+.settings-toggle input:checked + .settings-toggle-slider { background: var(--accent); }
+.settings-toggle input:checked + .settings-toggle-slider::before { transform: translateX(18px); }
 </style>
 </head>
 <body>
-<div id="fullscreenSettings" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:var(--bg);flex-direction:column;overflow:hidden">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line);flex-shrink:0">
-    <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0">设置</h2>
-    <button onclick="closeSettingsFullscreen()" style="padding:6px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px">关闭</button>
+<div id="fullscreenSettings" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:var(--bg);flex-direction:row;overflow:hidden">
+  <!-- Left Navigation -->
+  <div style="width:200px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--bg-secondary)">
+    <div style="padding:20px 16px 16px 16px;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="settingsUserAvatar" style="width:40px;height:40px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:14px;overflow:hidden;cursor:pointer" title="点击更换头像">
+          <span>SF</span>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--text)">StoryForge</div>
+          <div style="font-size:11px;color:var(--muted)">AI 创作助手</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px 0">
+      <div class="settings-nav-item active" onclick="switchSettingsNav(this,'settingsPageGeneral')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.001 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.023-1.25.42-1.51 1z"/></svg>
+        <span>通用</span>
+      </div>
+      <div class="settings-nav-item" onclick="switchSettingsNav(this,'settingsPagePersonal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>个性化</span>
+      </div>
+      <div class="settings-nav-item" onclick="switchSettingsNav(this,'settingsPageNotification')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>通知</span>
+      </div>
+      <div class="settings-nav-item" onclick="switchSettingsNav(this,'settingsPageAbout')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>关于</span>
+      </div>
+    </div>
   </div>
-  <div style="flex:1;overflow-y:auto;padding:24px 32px;max-width:800px;margin:0 auto;width:100%">
-    <!-- Tab Navigation for Settings -->
-    <div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:0">
-      <button class="settings-tab active" onclick="switchSettingsTab(this,'settingsGeneral')">通用</button>
-      <button class="settings-tab" onclick="switchSettingsTab(this,'settingsAbout')">关于</button>
+  <!-- Right Content -->
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:flex-end;padding:12px 20px;border-bottom:1px solid var(--line);flex-shrink:0">
+      <button onclick="closeSettingsFullscreen()" style="padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px">关闭</button>
     </div>
+    <div style="flex:1;overflow-y:auto;padding:24px 32px;max-width:640px;width:100%">
 
-    <!-- General Settings -->
-    <div id="settingsGeneral" class="settings-panel">
-      <div class="settings-section">
-        <h3 style="font-size:15px;color:var(--text);margin:0 0 12px 0">API 配置</h3>
-        <div class="settings-item">
-          <label>API 地址</label>
-          <input type="text" id="settingsApiUrl" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:13px">
-        </div>
-        <div class="settings-item">
-          <label>API Key</label>
-          <input type="password" id="settingsApiKey" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:13px">
-        </div>
-        <div class="settings-item">
-          <label>模型名称</label>
-          <input type="text" id="settingsModel" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:13px">
+      <!-- 通用 -->
+      <div id="settingsPageGeneral" class="settings-page-panel">
+        <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0 0 24px 0">通用</h2>
+        <div class="settings-group">
+          <h3 style="font-size:14px;color:var(--muted);margin:0 0 12px 0;font-weight:500">API 配置</h3>
+          <div class="settings-row"><label>API 地址</label><input type="text" id="settingsApiUrl" class="settings-input" placeholder="https://api.openai.com/v1"></div>
+          <div class="settings-row"><label>API Key</label><input type="password" id="settingsApiKey" class="settings-input" placeholder="sk-..."></div>
+          <div class="settings-row"><label>模型名称</label><input type="text" id="settingsModel" class="settings-input" placeholder="gpt-4o"></div>
+          <div class="settings-row"><label>Temperature</label><input type="range" id="settingsTemp" min="0" max="20" value="7" oninput="document.getElementById('tempValue').textContent=(this.value/10).toFixed(1)" style="flex:1"><span id="tempValue" style="font-size:12px;color:var(--muted);min-width:24px">0.7</span></div>
         </div>
       </div>
-    </div>
 
-    <!-- About -->
-    <div id="settingsAbout" class="settings-panel" style="display:none">
-      <div class="settings-section">
-        <h3 style="font-size:15px;color:var(--text);margin:0 0 12px 0">关于 StoryForge AI</h3>
-        <p style="font-size:13px;color:var(--muted);line-height:1.6">StoryForge AI 是一款智能创作助手，支持 AI 对话、文件管理、多技能工作流。基于 Electron 构建，支持 Windows 平台。</p>
-        <p style="font-size:12px;color:var(--faint);margin-top:12px">版本：4.2.1</p>
+      <!-- 个性化 -->
+      <div id="settingsPagePersonal" class="settings-page-panel" style="display:none">
+        <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0 0 24px 0">个性化</h2>
+        <div class="settings-group">
+          <h3 style="font-size:14px;color:var(--muted);margin:0 0 12px 0;font-weight:500">品牌图标</h3>
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+            <div id="currentLogoPreview" style="width:64px;height:64px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--line)">
+              <img src="app-icon.jpg" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:white;font-size:20px;font-weight:600>SF</span>'">
+            </div>
+            <div>
+              <button onclick="document.getElementById('logoUploadInput').click()" style="padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px">上传图标</button>
+              <input type="file" id="logoUploadInput" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+              <p style="font-size:11px;color:var(--faint);margin:6px 0 0 0">支持 JPG/PNG，建议 256x256px</p>
+            </div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3 style="font-size:14px;color:var(--muted);margin:0 0 12px 0;font-weight:500">字体大小</h3>
+          <div class="settings-row"><label>消息字体</label><div style="display:flex;align-items:center;gap:10px;flex:1"><input type="range" id="settingsFontSize" min="12" max="20" value="14" oninput="applySettingsFontSize(this.value)" style="flex:1"><span id="fontSizeDisplay" style="font-size:12px;color:var(--muted);min-width:30px">14px</span></div></div>
+        </div>
       </div>
+
+      <!-- 通知 -->
+      <div id="settingsPageNotification" class="settings-page-panel" style="display:none">
+        <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0 0 24px 0">通知</h2>
+        <div class="settings-group">
+          <div class="settings-row"><label>生成完成通知</label><label class="settings-toggle"><input type="checkbox" id="notifyGenerationDone" checked><span class="settings-toggle-slider"></span></label></div>
+          <div class="settings-row"><label>工具执行通知</label><label class="settings-toggle"><input type="checkbox" id="notifyToolExecution" checked><span class="settings-toggle-slider"></span></label></div>
+          <div class="settings-row"><label>错误提醒</label><label class="settings-toggle"><input type="checkbox" id="notifyErrors" checked><span class="settings-toggle-slider"></span></label></div>
+        </div>
+      </div>
+
+      <!-- 关于 -->
+      <div id="settingsPageAbout" class="settings-page-panel" style="display:none">
+        <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0 0 24px 0">关于 StoryForge AI</h2>
+        <div class="settings-group">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+            <div style="width:64px;height:64px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;overflow:hidden">
+              <img src="app-icon.jpg" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:white;font-size:24px;font-weight:600>SF</span>'">
+            </div>
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--text)">StoryForge AI</div>
+              <div style="font-size:13px;color:var(--muted)">版本 4.3.0</div>
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <button onclick="checkForUpdates()" id="checkUpdateBtn" style="padding:8px 20px;border:1px solid var(--accent);border-radius:6px;background:none;color:var(--accent);cursor:pointer;font-size:13px">检查更新</button>
+            <span id="updateStatus" style="font-size:12px;color:var(--muted);margin-left:12px"></span>
+          </div>
+        </div>
+        <div class="settings-group" style="margin-top:20px">
+          <p style="font-size:13px;color:var(--muted);line-height:1.6">StoryForge AI 是一款智能创作助手，支持 AI 对话、文件管理、多技能工作流。</p>
+          <p style="font-size:12px;color:var(--faint);margin-top:8px">基于 Electron 构建，支持 Windows 平台。</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -2530,11 +2650,11 @@ function closeSettingsFullscreen() {
   // Save settings
   saveCurrentSettings();
 }
-function switchSettingsTab(btn, panelId) {
-  document.querySelectorAll('.settings-tab').forEach(function(b) { b.classList.remove('active'); });
-  document.querySelectorAll('.settings-panel').forEach(function(p) { p.style.display = 'none'; });
+function switchSettingsNav(btn, pageId) {
+  document.querySelectorAll('.settings-nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.querySelectorAll('.settings-page-panel').forEach(function(p){ p.style.display = 'none'; });
   btn.classList.add('active');
-  var panel = document.getElementById(panelId);
+  var panel = document.getElementById(pageId);
   if (panel) panel.style.display = 'block';
 }
 function saveCurrentSettings() {
@@ -2545,6 +2665,73 @@ function saveCurrentSettings() {
   if (apiKey) config.api_key = apiKey;
   if (model) config.model_name = model;
   try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+}
+function handleLogoUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Show crop dialog
+    showCropDialog(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+function showCropDialog(imageSrc) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = '<div style="background:var(--bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center"><h3 style="font-size:16px;margin:0 0 16px;color:var(--text)">裁剪图标</h3><div style="width:200px;height:200px;margin:0 auto;overflow:hidden;border-radius:12px;border:2px solid var(--line)"><img src="' + imageSrc + '" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;gap:8px;justify-content:center;margin-top:16px"><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer">取消</button><button onclick="applyLogoCrop(\'' + imageSrc + '\');this.closest(\'div[style*=fixed]\').remove()" style="padding:8px 16px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:white;cursor:pointer">应用</button></div></div>';
+  document.body.appendChild(overlay);
+}
+function applyLogoCrop(src) {
+  // Update all logo images
+  document.querySelectorAll('img[src*="app-icon"]').forEach(function(img) { img.src = src; });
+  var preview = document.getElementById('currentLogoPreview');
+  if (preview) {
+    var img = preview.querySelector('img');
+    if (img) img.src = src;
+  }
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sf-config') || '{}');
+    cfg.logo = src;
+    localStorage.setItem('sf-config', JSON.stringify(cfg));
+  } catch(e) {}
+}
+function applySettingsFontSize(val) {
+  document.getElementById('fontSizeDisplay').textContent = val + 'px';
+  document.querySelectorAll('.message-body').forEach(function(el) { el.style.fontSize = val + 'px'; });
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sf-config') || '{}');
+    cfg.fontSize = val;
+    localStorage.setItem('sf-config', JSON.stringify(cfg));
+  } catch(e) {}
+}
+function checkForUpdates() {
+  var statusEl = document.getElementById('updateStatus');
+  var btn = document.getElementById('checkUpdateBtn');
+  if (statusEl) statusEl.textContent = '检查中...';
+  if (btn) btn.disabled = true;
+  fetch('/api/check-update')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (statusEl) {
+        if (data.currentVersion) {
+          statusEl.textContent = '当前版本 v' + data.currentVersion + '，点击下方链接检查是否有新版本';
+          statusEl.style.color = 'var(--accent)';
+        }
+        // Add a link to GitHub releases
+        var link = document.createElement('a');
+        link.href = data.updateUrl;
+        link.target = '_blank';
+        link.textContent = '查看最新版本';
+        link.style.cssText = 'display:inline-block;margin-top:8px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;color:var(--accent);font-size:12px;text-decoration:none';
+        statusEl.parentElement.appendChild(link);
+      }
+      if (btn) { btn.disabled = false; btn.textContent = '检查更新'; }
+    })
+    .catch(function(e) {
+      if (statusEl) statusEl.textContent = '检查失败: ' + e.message;
+      if (btn) btn.disabled = false;
+    });
 }
 function applyTheme(name) {
   var themes = {
@@ -2619,22 +2806,26 @@ function toggleVoiceInput(enabled) {
   if (btn) btn.style.display = enabled ? 'flex' : 'none';
 }
 function toggleDarkMode() {
-  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var html = document.documentElement;
+  var isDark = html.getAttribute('data-theme') === 'dark';
   if (isDark) {
-    document.documentElement.removeAttribute('data-theme');
-    var moon = document.getElementById('themeIconMoon');
-    var sun = document.getElementById('themeIconSun');
-    if (moon) moon.style.display = '';
-    if (sun) sun.style.display = 'none';
-    if (config) { config.theme_mode = 'light'; try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {} }
+    html.removeAttribute('data-theme');
+    document.body.style.background = '';
+    document.body.style.color = '';
   } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    var moon = document.getElementById('themeIconMoon');
-    var sun = document.getElementById('themeIconSun');
-    if (moon) moon.style.display = 'none';
-    if (sun) sun.style.display = '';
-    if (config) { config.theme_mode = 'dark'; try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {} }
+    html.setAttribute('data-theme', 'dark');
   }
+  // Toggle icons
+  var moon = document.getElementById('themeIconMoon');
+  var sun = document.getElementById('themeIconSun');
+  if (moon) moon.style.display = isDark ? '' : 'none';
+  if (sun) sun.style.display = isDark ? 'none' : '';
+  // Save
+  try {
+    var cfg = JSON.parse(localStorage.getItem('sf-config') || '{}');
+    cfg.darkMode = !isDark;
+    localStorage.setItem('sf-config', JSON.stringify(cfg));
+  } catch(e) {}
 }
 function startVoiceInput() {
   var btn = document.getElementById('voiceInputBtn');
@@ -3732,20 +3923,61 @@ function continueChat() {
 
 /* 渲染AI提问的选项按钮 */
 function renderQuestionButtons(question, options) {
-  // 移除已有的问题按钮（避免重复，确保不在 think-box 内）
-  var existing = document.querySelector('.question-buttons');
+  var existing = document.querySelector('.question-dialog');
   if (existing) existing.remove();
   var mc = document.getElementById('chatMessages');
-  if (!mc) return;
-  // 确保按钮追加到 chatMessages（而非 streamingThinkBox 内部）
-  var div = document.createElement('div');
-  div.className = 'question-buttons';
-  div.innerHTML = options.map(function (opt) {
-    return '<button class="question-btn" onclick="selectQuestionOption(this,\'' + escapeHtml(opt).replace(/'/g, "\\'") + '\')">' + escapeHtml(opt) + '</button>';
-  }).join('') +
-  '<button class="question-btn question-btn-other" onclick="showOtherInput(this)">其他</button>';
-  mc.appendChild(div);
-  mc.scrollTop = mc.scrollHeight;
+  if (!mc || !options || !options.length) return;
+  
+  var dialog = document.createElement('div');
+  dialog.className = 'question-dialog';
+  dialog.style.cssText = 'margin:8px 24px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:480px';
+  
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)';
+  header.innerHTML = '<div style="font-size:14px;font-weight:500;color:var(--text)">' + escapeHtml(question) + '</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><span>1 of ' + options.length + '</span><span>\u2715</span></div>';
+  dialog.appendChild(header);
+  
+  // Options
+  var optionsDiv = document.createElement('div');
+  optionsDiv.style.cssText = 'padding:4px 0';
+  options.forEach(function(opt, idx) {
+    var optBtn = document.createElement('button');
+    optBtn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 18px;border:none;background:none;color:var(--text);cursor:pointer;font-size:13px;transition:background 0.15s;border-bottom:1px solid var(--line)';
+    optBtn.textContent = opt;
+    optBtn.onmouseover = function() { this.style.background = 'var(--soft)'; };
+    optBtn.onmouseout = function() { this.style.background = 'none'; };
+    optBtn.onclick = function() {
+      sendUserChoice(opt);
+      dialog.remove();
+    };
+    optionsDiv.appendChild(optBtn);
+  });
+  dialog.appendChild(optionsDiv);
+  
+  // Bottom bar
+  var bottom = document.createElement('div');
+  bottom.style.cssText = 'padding:12px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--line)';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = 'padding:6px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px';
+  cancelBtn.textContent = '\u53D6\u6D88';
+  cancelBtn.onclick = function() { dialog.remove(); };
+  var skipBtn = document.createElement('button');
+  skipBtn.style.cssText = 'padding:6px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px';
+  skipBtn.textContent = '\u4E0A\u4E00\u6B65';
+  skipBtn.disabled = true;
+  skipBtn.style.opacity = '0.5';
+  var nextBtn = document.createElement('button');
+  nextBtn.style.cssText = 'padding:6px 16px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:white;cursor:pointer;font-size:13px';
+  nextBtn.textContent = '\u4E0B\u4E00\u6B65';
+  nextBtn.style.display = 'none'; // Only show when needed
+  bottom.appendChild(cancelBtn);
+  bottom.appendChild(skipBtn);
+  bottom.appendChild(nextBtn);
+  dialog.appendChild(bottom);
+  
+  mc.appendChild(dialog);
+  dialog.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
 /* 显示"其他"自定义输入框 */
@@ -3821,7 +4053,7 @@ function refreshSkillsList() {
   if (!container) return;
   if (!skillsLoaded) {
     container.innerHTML = '<div class="skills-list-area"><div class="skills-list-header"><h2>技能库</h2><span class="skills-count">加载中...</span></div><div class="skills-grid">' +
-      Array(6).fill('<div class="skill-card" style="opacity:.4"><div class="skill-card-header"><div class="skill-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="skill-card-name" style="width:120px;height:14px;background:var(--soft-2);border-radius:4px"></div></div><div class="skill-card-desc" style="width:100%;height:12px;background:var(--soft-2);border-radius:4px"></div></div>').join('') +
+      Array(6).fill('<div class="skill-card" style="opacity:.4"><div class="skill-card-header"><div class="skill-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div><div class="skill-card-name" style="width:120px;height:14px;background:var(--soft-2);border-radius:4px"></div></div><div class="skill-card-desc" style="width:100%;height:12px;background:var(--soft-2);border-radius:4px"></div></div>').join('') +
       '</div></div>';
   }
   fetch('/api/skills').then(function(r) { return r.json(); })
@@ -3834,14 +4066,14 @@ function renderSkillsView() {
   if (!container) return;
   var enabledCount = skillsList.filter(function(s) { return s.enabled; }).length;
   if (skillsList.length === 0) {
-    container.innerHTML = '<div class="skills-list-area"><div class="skills-list-header"><h2>技能库</h2><button class="skills-import-btn" onclick="showImportSkillModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>导入技能</button></div><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>暂无技能</p></div></div>';
+    container.innerHTML = '<div class="skills-list-area"><div class="skills-list-header"><h2>技能库</h2><button class="skills-import-btn" onclick="showImportSkillModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>导入技能</button></div><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg><p>暂无技能</p></div></div>';
     return;
   }
   var cards = skillsList.map(function(s) {
     var toggleClass = s.enabled ? ' on' : '';
     return '<div class="skill-card" onclick="viewSkillDetail(\'' + escapeHtml(s.id) + '\')">' +
       '<div class="skill-card-header">' +
-        '<div class="skill-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>' +
+        '<div class="skill-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>' +
         '<div class="skill-card-name">' + escapeHtml(s.name || s.id) + '</div>' +
         '<button class="skill-card-toggle' + toggleClass + '" onclick="event.stopPropagation();toggleSkillEnabled(\'' + escapeHtml(s.id) + '\',this)" title="' + (s.enabled ? '已启用' : '已禁用') + '"></button>' +
       '</div>' +
@@ -4077,7 +4309,7 @@ function refreshSettingsForm() {
   ];
   container.innerHTML = '<div class="settings-nav">' +
     navItems.map(function(item) {
-      return '<div class="settings-nav-item' + (settingsTab === item.id ? ' active' : '') + '" data-tab="' + item.id + '" onclick="switchSettingsTab(\'' + item.id + '\')">' + item.icon + ' ' + item.label + '</div>';
+      return '<div class="settings-nav-item' + (settingsTab === item.id ? ' active' : '') + '" data-tab="' + item.id + '" onclick="switchSettingsNav(this,\'settingsPage' + item.id.charAt(0).toUpperCase() + item.id.slice(1) + '\')">' + item.icon + ' ' + item.label + '</div>';
     }).join('') + '</div>' +
     '<div class="settings-content">' +
     '<div class="settings-section active" id="settingsGeneral">' + renderGeneralSettings() + '</div>' +
@@ -4303,13 +4535,16 @@ function testConnection() {
 function loadConfig() {
   // Restore dark/light mode from saved config
   try {
-    var savedAppearance = JSON.parse(localStorage.getItem('sf-config') || '{}');
-    if (savedAppearance.theme_mode === 'dark') {
+    var savedCfg = JSON.parse(localStorage.getItem('sf-config') || '{}');
+    if (savedCfg.darkMode) {
       document.documentElement.setAttribute('data-theme', 'dark');
-      var moon = document.getElementById('themeIconMoon');
-      var sun = document.getElementById('themeIconSun');
-      if (moon) moon.style.display = 'none';
-      if (sun) sun.style.display = '';
+      // Set icons after DOM is ready
+      setTimeout(function() {
+        var moon = document.getElementById('themeIconMoon');
+        var sun = document.getElementById('themeIconSun');
+        if (moon) moon.style.display = 'none';
+        if (sun) sun.style.display = '';
+      }, 100);
     }
   } catch(e) {}
 

@@ -2080,6 +2080,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     // --- Update Check (GitHub Releases) ---
+    if (pathname === '/api/check-update') {
+      return json(res, { 
+        ok: true, 
+        currentVersion: require('./package.json').version,
+        updateUrl: 'https://github.com/HamlitonAlex/StoryForge-AI/releases/latest',
+        message: '点击访问 GitHub 下载最新版本'
+      });
+    }
     if (pathname === '/api/update/check') {
       try {
         const pkg = require('./package.json');
