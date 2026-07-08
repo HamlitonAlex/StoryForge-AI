@@ -100,7 +100,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
-    minWidth: 1000,
+    minWidth: 600,
     minHeight: 650,
     title: 'StoryForge AI',
     icon: path.join(__dirname, 'build', 'icon.png'),
