@@ -2179,11 +2179,31 @@ function stripEscapeChars(text) {
   return text.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r').replace(/\\\\/g, '\\').replace(/\\"/g, '"').replace(/\\'/g, "'");
 }
 
-/* 清理显示内容：转义字符 + TOOL标签 */
+/* 清理显示内容：转义字符 + TOOL标签 + XML标签 + 截断标记 */
 function cleanDisplayContent(text) {
+  if (!text) return '';
   return stripEscapeChars(text)
+    // Strip TOOL_CALL blocks
     .replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '')
+    // Strip TOOL_RESULT blocks
     .replace(/\[TOOL_RESULT\][\s\S]*?\[\/TOOL_RESULT\]/g, '')
+    // Strip XML-like function tags that some models output
+    .replace(/<function[\s\S]*?<\/function>/gi, '')
+    .replace(/<parameter[\s\S]*?<\/parameter>/gi, '')
+    .replace(/<invoke[\s\S]*?<\/invoke>/gi, '')
+    .replace(/<\/?function>/gi, '')
+    .replace(/<\/?parameter>/gi, '')
+    .replace(/<\/?invoke>/gi, '')
+    .replace(/<anti_threshold>|<\/anti_threshold>/gi, '')
+    // Strip antml/think tags
+    .replace(/<antml:invoke[\s\S]*?<\/antml:invoke>/gi, '')
+    .replace(/<antml:thinking[\s\S]*?<\/antml:thinking>/gi, '')
+    .replace(/<think[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/?think>/gi, '')
+    // Strip content truncation markers
+    .replace(/\[内容较长，已截断显示\]/g, '')
+    // Clean up multiple blank lines
+    .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 }
 
@@ -2986,6 +3006,9 @@ function doSendMessage(msg) {
       });
     }
     chatHistory.push(userMsg);
+    /* 清除已有的问题按钮 */
+    var existingQ = document.querySelector('.question-buttons');
+    if (existingQ) existingQ.remove();
     /* 立即保存用户消息到服务端 */
     if (currentConversationId) {
       fetch('/api/conversations/' + currentConversationId + '/messages', {
@@ -3023,7 +3046,7 @@ function doSendMessage(msg) {
       var buffer = '';
       function read() {
         return reader.read().then(function (result) {
-          if (result.done) { finishGeneration(assistantContent); return; }
+          if (result.done) { finishGeneration(assistantContent); assistantContent = ''; return; }
           buffer += decoder.decode(result.value, { stream: true });
           var lines = buffer.split('\n');
           buffer = lines.pop() || '';
@@ -3031,7 +3054,7 @@ function doSendMessage(msg) {
             var line = lines[i];
             if (!line.startsWith('data: ')) continue;
             var dataStr = line.slice(6).trim();
-            if (dataStr === '[DONE]') { finishGeneration(assistantContent); return; }
+            if (dataStr === '[DONE]') { finishGeneration(assistantContent); assistantContent = ''; return; }
             try {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
@@ -3119,8 +3142,9 @@ function doSendMessage(msg) {
       }
       return read();
     }).catch(function (err) {
-      if (err.name === 'AbortError') { finishGeneration(assistantContent); return; }
+      if (err.name === 'AbortError') { finishGeneration(assistantContent); assistantContent = ''; return; }
       finishGeneration(assistantContent || '请求失败: ' + err.message);
+      assistantContent = '';
       addLog('请求错误: ' + err.message);
     });
   }).catch(function(e) {
@@ -3158,7 +3182,7 @@ function finishGeneration(content) {
   }
   _generationSessionId = null;
   if (content) {
-    var cleanContent = content.trim();
+    var cleanContent = cleanDisplayContent(content).trim();
     if (cleanContent) chatHistory.push({ role: 'assistant', content: cleanContent });
     renderMessages();
     /* 检测截断标记，显示"继续生成"按钮 */
@@ -3308,7 +3332,7 @@ function updateLastAssistantMessage(content) {
   if (!body) return;
   /* 保留 .continue-btn 如果存在，但先移除以便更新内容 */
   var btn = body.querySelector('.continue-btn');
-  body.innerHTML = renderMarkdown(content);
+  body.innerHTML = renderMarkdown(cleanDisplayContent(content));
   mc.scrollTop = mc.scrollHeight;
 }
 
@@ -3324,6 +3348,9 @@ function continueChat() {
 
 /* 渲染AI提问的选项按钮 */
 function renderQuestionButtons(question, options) {
+  // Prevent duplicate rendering
+  var existing = document.querySelector('.question-buttons');
+  if (existing) return;
   var mc = document.getElementById('chatMessages');
   if (!mc) return;
   var div = document.createElement('div');

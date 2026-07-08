@@ -225,7 +225,7 @@ function callLLM(messages, config, stream = true) {
       model: config.model,
       messages,
       temperature: config.temperature,
-      max_tokens: config.reserved_output_tokens || 32000,
+      max_tokens: Math.max(config.reserved_output_tokens || 32000, 16384),
       stream
     });
     const opts = {
