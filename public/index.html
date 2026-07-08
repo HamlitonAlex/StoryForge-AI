@@ -1091,6 +1091,10 @@ a{color:var(--accent);text-decoration:none}
   line-height: 1.6; border-top: 1px solid var(--line);
 }
 .think-label { font-weight: 500; }
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
 .appearance-preview{width:48px;height:48px;border-radius:var(--radius-md);object-fit:cover;border:2px solid var(--line);background:var(--soft)}
 .appearance-upload-row{display:flex;align-items:center;gap:12px;padding:10px 0}
 .appearance-upload-row label.upload-btn{padding:4px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
@@ -2195,11 +2199,16 @@ function cleanDisplayContent(text) {
     .replace(/<\/?parameter>/gi, '')
     .replace(/<\/?invoke>/gi, '')
     .replace(/<anti_threshold>|<\/anti_threshold>/gi, '')
-    // Strip antml/think tags
-    .replace(/<antml:invoke[\s\S]*?<\/antml:invoke>/gi, '')
-    .replace(/<antml:thinking[\s\S]*?<\/antml:thinking>/gi, '')
+    // Strip antml namespace tags (generic match)
+    .replace(/<antml:[\w]+[\s\S]*?<\/antml:[\w]+>/gi, '')
+    .replace(/<\/?antml:[\w]+>/gi, '')
+    // Strip think tags
     .replace(/<think[\s\S]*?<\/think>/gi, '')
     .replace(/<\/?think>/gi, '')
+    // Strip remaining self-closing XML-like tags
+    .replace(/<\/?\w+:\w+[^>]*\/>/gi, '')
+    // Strip bare JSON-like tool result strings
+    .replace(/\{"ok"\s*:\s*(true|false)[\s\S]*?\}/g, '')
     // Strip content truncation markers
     .replace(/\[内容较长，已截断显示\]/g, '')
     // Clean up multiple blank lines
@@ -2681,6 +2690,8 @@ function switchTab(convId) {
   _generationSessionId = null;
   var typing = document.getElementById('typingIndicator');
   if (typing) typing.remove();
+  var thinkBox = document.getElementById('streamingThinkBox');
+  if (thinkBox) thinkBox.remove();
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) sendBtn.disabled = false;
   currentConversationId = convId;
@@ -3026,10 +3037,9 @@ function doSendMessage(msg) {
     var mc = document.getElementById('chatMessages');
     if (mc) {
       var typing = document.createElement('div');
-      typing.className = 'message assistant'; typing.id = 'typingIndicator';
-      var typingAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
-      typing.innerHTML = '<div class="message-avatar"><img src="' + typingAvatarSrc + '" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
-          '<div class="message-body"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-text">思考中...</span></div></div>';
+      typing.id = 'typingIndicator';
+      typing.style.cssText = 'padding:8px 24px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px';
+      typing.innerHTML = '<span class="typing-dots" style="display:flex;gap:3px"><span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typingBounce 1.4s infinite ease-in-out both;animation-delay:-0.32s"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typingBounce 1.4s infinite ease-in-out both;animation-delay:-0.16s"></span><span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typingBounce 1.4s infinite ease-in-out both"></span></span><span>思考中...</span>';
       mc.appendChild(typing); mc.scrollTop = mc.scrollHeight;
     }
     var assistantContent = '';
@@ -3059,24 +3069,22 @@ function doSendMessage(msg) {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); }
               if (data.type === 'tool_calls' && data.calls) {
-                var msgBody = typing.querySelector('.message-body');
-                if (msgBody) {
-                  var toolDiv = document.createElement('div');
-                  toolDiv.className = 'tool-calls-inline';
-                  toolDiv.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:3px';
-                  data.calls.forEach(function(call, idx) {
-                    var card = document.createElement('div');
-                    card.id = 'tool-card-' + idx;
-                    card.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:4px;font-size:12px';
-                    var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', question:'用户确认' }[call.name] || call.name;
-                    card.innerHTML = '<span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:var(--muted);font-size:11px">加载中...</span>';
-                    toolDiv.appendChild(card);
-                    if (call.name === 'question' && call.args && call.args.options) {
-                      renderQuestionButtons(call.args.question, call.args.options);
-                    }
-                  });
-                  msgBody.appendChild(toolDiv);
-                }
+                var toolDiv = document.createElement('div');
+                toolDiv.className = 'tool-calls-inline';
+                toolDiv.style.cssText = 'margin:8px 24px;display:flex;flex-direction:column;gap:3px';
+                data.calls.forEach(function(call, idx) {
+                  var card = document.createElement('div');
+                  card.id = 'tool-card-' + idx;
+                  card.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg-secondary);border:1px solid var(--line);border-radius:4px;font-size:12px';
+                  var displayName = { fs_list:'列出目录', fs_read:'读取文件', fs_write:'写入文件', fs_delete:'删除文件', fs_search:'搜索文件', fs_info:'文件信息', save_file:'保存文件', read_file:'读取文件', list_files:'列出文件', generate_image:'生成图片', question:'用户确认' }[call.name] || call.name;
+                  card.innerHTML = '<span style="color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(displayName) + '</span><span class="tool-call-status" style="color:var(--muted);font-size:11px">加载中...</span>';
+                  toolDiv.appendChild(card);
+                  if (call.name === 'question' && call.args && call.args.options) {
+                    renderQuestionButtons(call.args.question, call.args.options);
+                  }
+                });
+                mc.appendChild(toolDiv);
+                mc.scrollTop = mc.scrollHeight;
               }
               if (data.type === 'tool_results') {
                 if (data.results) {
@@ -3155,16 +3163,63 @@ function doSendMessage(msg) {
 function updateStreamMessage(content) {
   // 如果用户已切换对话，不再更新
   if (_generationSessionId && _generationSessionId !== currentConversationId) return;
-  var mc = document.getElementById('chatMessages');
+  // 移除简单的 typing 指示器（think-box 将取代它）
   var typing = document.getElementById('typingIndicator');
-  if (!typing) return;
-  /* 判断用户是否正在向上滚动 */
-  var isNearBottom = mc.scrollHeight - mc.scrollTop - mc.clientHeight < 100;
-  var typingAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
-  typing.innerHTML = '<div class="message-avatar"><img src="' + typingAvatarSrc + '" alt="AI" style="width:14px;height:14px;border-radius:3px"></div>' +
-    '<div class="message-body">' + renderMarkdown(processThinkBlocks(cleanDisplayContent(content))) + '</div>';
-  /* 只有用户在底部时才自动滚动 */
-  if (isNearBottom) mc.scrollTop = mc.scrollHeight;
+  if (typing) typing.remove();
+  // 查找或创建思考容器
+  var thinkBox = document.getElementById('streamingThinkBox');
+  if (!thinkBox) {
+    var mc = document.getElementById('chatMessages');
+    if (!mc) return;
+    thinkBox = document.createElement('div');
+    thinkBox.id = 'streamingThinkBox';
+    thinkBox.className = 'think-block collapsed';
+    var header = document.createElement('div');
+    header.className = 'think-toggle';
+    header.onclick = function() {
+      thinkBox.classList.toggle('collapsed');
+      var arrow = thinkBox.querySelector('.think-arrow');
+      if (arrow) {
+        if (thinkBox.classList.contains('collapsed')) {
+          arrow.style.transform = 'rotate(-90deg)';
+        } else {
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      }
+    };
+    var arrow = document.createElement('svg');
+    arrow.className = 'think-arrow';
+    arrow.setAttribute('viewBox', '0 0 24 24');
+    arrow.setAttribute('fill', 'none');
+    arrow.setAttribute('stroke', 'currentColor');
+    arrow.setAttribute('stroke-width', '2');
+    arrow.setAttribute('width', '14');
+    arrow.setAttribute('height', '14');
+    arrow.style.transform = 'rotate(-90deg)';
+    arrow.innerHTML = '<polyline points="6 9 12 15 18 9"/>';
+    var label = document.createElement('span');
+    label.className = 'think-label';
+    label.textContent = '思考过程';
+    header.appendChild(arrow);
+    header.appendChild(label);
+    var contentDiv = document.createElement('div');
+    contentDiv.className = 'think-content';
+    contentDiv.id = 'streamingThinkContent';
+    thinkBox.appendChild(header);
+    thinkBox.appendChild(contentDiv);
+    mc.appendChild(thinkBox);
+  }
+  // 将内容流式写入思考框（展开时可见）
+  var thinkContent = document.getElementById('streamingThinkContent');
+  if (thinkContent) {
+    thinkContent.innerHTML = renderMarkdown(cleanDisplayContent(content));
+    thinkContent.scrollTop = thinkContent.scrollHeight;
+    // 判断用户是否在底部，自动滚动
+    var mc = document.getElementById('chatMessages');
+    if (mc && mc.scrollHeight - mc.scrollTop - mc.clientHeight < 100) {
+      mc.scrollTop = mc.scrollHeight;
+    }
+  }
 }
 
 var TRUNCATION_MARKER = '[内容较长，已截断显示]';
@@ -3173,33 +3228,62 @@ function finishGeneration(content) {
   isGenerating = false; streamAbortController = null;
   var sendBtn = document.getElementById('sendBtn');
   if (sendBtn) sendBtn.disabled = false;
-  var typing = document.getElementById('typingIndicator');
-  if (typing) typing.remove();
   // 如果用户已切换到其他对话，丢弃结果
   if (_generationSessionId && _generationSessionId !== currentConversationId) {
     _generationSessionId = null;
+    // 清理残留 UI
+    var typing = document.getElementById('typingIndicator');
+    if (typing) typing.remove();
+    var thinkBox = document.getElementById('streamingThinkBox');
+    if (thinkBox) thinkBox.remove();
     return;
   }
   _generationSessionId = null;
+  // 折叠思考框
+  var thinkBox = document.getElementById('streamingThinkBox');
+  if (thinkBox) {
+    thinkBox.classList.add('collapsed');
+    var arrow = thinkBox.querySelector('.think-arrow');
+    if (arrow) arrow.style.transform = 'rotate(-90deg)';
+  }
   if (content) {
     var cleanContent = cleanDisplayContent(content).trim();
-    if (cleanContent) chatHistory.push({ role: 'assistant', content: cleanContent });
-    renderMessages();
-    /* 检测截断标记，显示"继续生成"按钮 */
-    if (cleanContent && cleanContent.indexOf(TRUNCATION_MARKER) !== -1) {
-      showContinueButton();
-    }
-    /* 保存消息到服务端 */
-    if (currentConversationId && chatHistory.length > 0) {
-      fetch('/api/conversations/' + currentConversationId + '/messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatHistory })
-      }).catch(function(e) { addLog('保存消息失败: ' + e.message); });
-
-      /* 自动保存到本地工作文件夹 */
-      autoSaveToLocal();
+    if (cleanContent) {
+      // 将最终结果作为新的独立消息显示（非流式，一次性渲染）
+      var mc = document.getElementById('chatMessages');
+      if (mc) {
+        var msgDiv = document.createElement('div');
+        msgDiv.className = 'message assistant-message';
+        msgDiv.style.cssText = 'padding:12px 24px;display:flex;gap:10px';
+        var avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.style.cssText = 'width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--soft);display:flex;align-items:center;justify-content:center';
+        var aiAvatarSrc = customAppearance.aiAvatar || 'app-icon.jpg';
+        avatar.innerHTML = '<img src="' + aiAvatarSrc + '" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\';this.parentElement.textContent=\'AI\'">';
+        var body = document.createElement('div');
+        body.className = 'message-body';
+        body.style.cssText = 'flex:1;min-width:0;line-height:1.6;font-size:14px;color:var(--text)';
+        body.innerHTML = renderMarkdown(processThinkBlocks(cleanContent));
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(body);
+        mc.appendChild(msgDiv);
+        msgDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+      chatHistory.push({ role: 'assistant', content: cleanContent });
+      /* 保存消息到服务端 */
+      if (currentConversationId && chatHistory.length > 0) {
+        fetch('/api/conversations/' + currentConversationId + '/messages', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: chatHistory })
+        }).catch(function(e) { addLog('保存消息失败: ' + e.message); });
+        /* 自动保存到本地工作文件夹 */
+        autoSaveToLocal();
+      }
     }
   }
+  // 移除 typing 指示器和思考框
+  var typing = document.getElementById('typingIndicator');
+  if (typing) typing.remove();
   addLog('回复完成');
 }
 
@@ -3348,11 +3432,12 @@ function continueChat() {
 
 /* 渲染AI提问的选项按钮 */
 function renderQuestionButtons(question, options) {
-  // Prevent duplicate rendering
+  // 移除已有的问题按钮（避免重复，确保不在 think-box 内）
   var existing = document.querySelector('.question-buttons');
-  if (existing) return;
+  if (existing) existing.remove();
   var mc = document.getElementById('chatMessages');
   if (!mc) return;
+  // 确保按钮追加到 chatMessages（而非 streamingThinkBox 内部）
   var div = document.createElement('div');
   div.className = 'question-buttons';
   div.innerHTML = options.map(function (opt) {
