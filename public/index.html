@@ -1475,8 +1475,8 @@ button, input, select, textarea { transition: all 0.15s ease; }
   <div style="width:200px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--bg-secondary)">
     <div style="padding:20px 16px 16px 16px;border-bottom:1px solid var(--line)">
       <div style="display:flex;align-items:center;gap:10px">
-        <div id="settingsUserAvatar" style="width:40px;height:40px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:14px;overflow:hidden;cursor:pointer" title="点击更换头像">
-          <span>SF</span>
+        <div id="settingsUserAvatar" style="width:40px;height:40px;border-radius:8px;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;border:1px solid var(--line)" title="点击更换头像">
+          <img src="app-icon.png" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:var(--muted);font-weight:600;font-size:12px>SF</span>'">
         </div>
         <div>
           <div style="font-size:14px;font-weight:500;color:var(--text)">StoryForge</div>
