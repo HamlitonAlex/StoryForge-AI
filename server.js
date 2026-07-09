@@ -104,13 +104,18 @@ function getAllowedBaseDir() {
   return cfg.work_dir || BASE_DIR;
 }
 
+// Trusted paths list (in-memory, populated via /api/trust-path)
+let trustedPaths = [];
+
 function validatePath(requestedPath) {
   const base = getAllowedBaseDir();
   const resolved = path.resolve(requestedPath);
-  if (!resolved.startsWith(path.resolve(base))) {
-    return null; // Path traversal attempt
+  if (resolved.startsWith(path.resolve(base))) return resolved;
+  // Check trusted paths
+  for (const tp of trustedPaths) {
+    if (resolved.startsWith(tp)) return resolved;
   }
-  return resolved;
+  return null; // Path traversal attempt
 }
 
 // ==================== Conversations ====================
@@ -2266,6 +2271,32 @@ const server = http.createServer(async (req, res) => {
         modified: stat.mtime.toISOString(),
         created: stat.birthtime.toISOString()
       }});
+    }
+
+    // Path permission request
+    if (url === '/api/path-permission' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { requestedPath } = JSON.parse(body || '{}');
+      if (!requestedPath) return json(res, { ok: false, message: '缺少路径参数' });
+      const resolved = path.resolve(requestedPath);
+      const base = getAllowedBaseDir();
+      if (resolved.startsWith(path.resolve(base))) {
+        return json(res, { ok: true, message: '路径在允许范围内' });
+      }
+      // Return permission request for client to show
+      return json(res, { ok: 'confirm', message: '请求访问范围外的路径', path: resolved, base: base });
+    }
+
+    // Trust a path
+    if (url === '/api/trust-path' && req.method === 'POST') {
+      const body = await readBody(req);
+      const { path: p } = JSON.parse(body || '{}');
+      if (!p) return json(res, { ok: false });
+      const resolved = path.resolve(p);
+      if (!trustedPaths.includes(resolved)) {
+        trustedPaths.push(resolved);
+      }
+      return json(res, { ok: true });
     }
 
     err(res, 'Not found', 404);

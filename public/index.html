@@ -1485,6 +1485,7 @@ a{color:var(--accent);text-decoration:none}
     <button class="ls-tab active" data-view="chat" onclick="switchView('chat',null,this)">对话</button>
     <button class="ls-tab" data-view="skills" onclick="switchView('skills',null,this)">技能</button>
     <button class="ls-tab" data-view="generate" onclick="switchView('generate',null,this)">图片</button>
+    <button class="ls-tab" data-view="browser" onclick="switchView('browser',null,this)">浏览器</button>
   </div>
   <div class="left-sidebar-list-area">
     <div id="sidebarChatList" style="display:flex;flex-direction:column;flex:1;min-height:0">
@@ -1645,6 +1646,21 @@ a{color:var(--accent);text-decoration:none}
 
   <!-- 视图: 技能 -->
   <div class="view-panel" id="skillsView" style="display:none;flex-direction:column;flex:1;min-height:0;overflow-y:auto"></div>
+
+  <!-- 视图: 内置浏览器 -->
+  <div class="view-panel" id="browserView" style="display:none;flex-direction:column;flex:1;min-height:0">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);flex-shrink:0">
+      <button onclick="browserBack()" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--text);cursor:pointer;font-size:12px">&larr;</button>
+      <button onclick="browserForward()" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--text);cursor:pointer;font-size:12px">&rarr;</button>
+      <button onclick="browserRefresh()" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--text);cursor:pointer;font-size:12px">&#8635;</button>
+      <input type="text" id="browserUrl" style="flex:1;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:12px;outline:none" placeholder="输入网址..." onkeydown="if(event.key==='Enter')browserGo(this.value)">
+      <button onclick="browserGo(document.getElementById('browserUrl').value)" style="padding:4px 12px;border:1px solid var(--accent);border-radius:4px;background:var(--accent);color:white;cursor:pointer;font-size:12px">前往</button>
+      <button onclick="closeBrowser()" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--text);cursor:pointer;font-size:12px">&#10005;</button>
+    </div>
+    <div style="flex:1;overflow:hidden">
+      <webview id="browserWebview" src="about:blank" style="width:100%;height:100%;border:none"></webview>
+    </div>
+  </div>
 
   <div class="view-panel" id="generateView" style="display:none;flex-direction:column;flex:1;min-height:0">
     <div class="gen-header">
@@ -2514,6 +2530,10 @@ function renderMarkdown(text) {
   s = s.replace(/^- (.+)$/gm, '<li>$1</li>');
   s = s.replace(/(<li>.*<\/li>\n?)+/g, function (m) { return '<ul>' + m + '</ul>'; });
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  /* Auto-link bare URLs (including video URLs like YouTube, Bilibili) */
+  s = s.replace(/(?<!["\'=\(])(https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|bilibili\.com\/video\/|b23\.tv\/)[^\s<&]+)/gi, function(url) {
+    return '<a href="' + url + '" onclick="event.preventDefault();openInBrowser(\'' + url.replace(/'/g, "\\'") + '\')" style="color:var(--accent);text-decoration:underline" title="在内置浏览器中打开">[视频链接]</a>';
+  });
   s = s.replace(/\n/g, '<br>');
   return s;
 }
@@ -2579,13 +2599,15 @@ function switchView(view, iframeSrc, el) {
   }
   /* 更新状态栏视图名称 */
   var statusView = document.getElementById('statusView');
-  var viewNames = { chat: '对话', skills: '技能', generate: '图片' };
+  var viewNames = { chat: '对话', skills: '技能', generate: '图片', browser: '浏览器' };
   if (statusView) statusView.textContent = viewNames[view] || view;
 
   /* 隐藏所有视图 */
   document.getElementById('chatView').style.display = 'none';
   document.getElementById('skillsView').style.display = 'none';
   document.getElementById('generateView').style.display = 'none';
+  var browserViewEl = document.getElementById('browserView');
+  if (browserViewEl) browserViewEl.style.display = 'none';
 
   /* 左侧栏：始终显示 */
   var ls = document.getElementById('leftSidebar');
@@ -2608,6 +2630,10 @@ function switchView(view, iframeSrc, el) {
     rp.classList.add('hidden');
   } else if (view === 'generate') {
     document.getElementById('generateView').style.display = 'flex';
+    rp.classList.add('hidden');
+  } else if (view === 'browser') {
+    var bv = document.getElementById('browserView');
+    if (bv) bv.style.display = 'flex';
     rp.classList.add('hidden');
   } else {
     rp.classList.add('hidden');
@@ -3519,17 +3545,17 @@ function doSendMessage(msg) {
     var toolCallRounds = 0; // FIX: track tool call rounds to prevent infinite loops
     var _toolCardCounter = 0; // FIX: global counter for unique tool card IDs
     streamAbortController = new AbortController();
-    // Watchdog timer - abort if no data for 45 seconds
+    // Watchdog timer - abort if no data for 120 seconds (AI may need time to think)
     var streamWatchdog = null;
     function resetWatchdog() {
       if (streamWatchdog) clearTimeout(streamWatchdog);
       streamWatchdog = setTimeout(function() {
         if (isGenerating && !streamAbortController.signal.aborted) {
-          addLog('流式响应超时(45s)，自动结束');
+          addLog('流式响应超时(120s)，自动结束');
           finishGeneration(assistantContent); assistantContent = '';
           if (streamAbortController) streamAbortController.abort();
         }
-      }, 45000);
+      }, 120000);
     }
     resetWatchdog();
     fetch('/api/chat', {
@@ -3638,6 +3664,11 @@ function doSendMessage(msg) {
                           st.style.color = '#d32f2f';
                         }
                       }
+                    }
+                    // Track last failed path for permission dialog
+                    if (r.result && !r.result.ok && r.result.message && r.result.message.indexOf('路径不在允许') >= 0) {
+                      window._lastFailedPath = r.args && (r.args.path || r.args.directory || r.args.filename) || '';
+                      showPathPermissionDialog(r.result.message);
                     }
                   });
                 }
@@ -3836,6 +3867,61 @@ function finishGeneration(content) {
   var typing = document.getElementById('typingIndicator');
   if (typing) typing.remove();
   addLog('回复完成');
+}
+
+/* Path permission dialog */
+function showPathPermissionDialog(message) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = '<div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center"><h3 style="font-size:15px;margin:0 0 12px;color:var(--text)">文件访问权限</h3><p style="font-size:13px;color:var(--muted);margin:0 0 20px;line-height:1.5">' + escapeHtml(message) + '</p><div style="display:flex;gap:8px;justify-content:center"><button onclick="this.closest(\'div[style*=fixed]\').remove();trustCurrentPath()" style="padding:8px 20px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:white;cursor:pointer;font-size:13px">允许访问</button><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:8px 20px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px">拒绝</button></div></div>';
+  document.body.appendChild(overlay);
+}
+function trustCurrentPath() {
+  var pathToTrust = window._lastFailedPath || '';
+  if (!pathToTrust) return;
+  fetch('/api/path-permission', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ requestedPath: pathToTrust }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok === 'confirm' && data.path) {
+        fetch('/api/trust-path', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: data.path }) })
+          .then(function() { console.log('Trusted path: ' + data.path); });
+      }
+    });
+}
+
+/* Built-in browser functions */
+function browserGo(url) {
+  if (!url) return;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+  var wv = document.getElementById('browserWebview');
+  if (wv && wv.loadURL) { wv.loadURL(url); }
+  else if (wv && wv.src !== undefined) { wv.src = url; }
+  var urlInput = document.getElementById('browserUrl');
+  if (urlInput) urlInput.value = url;
+}
+function browserBack() {
+  var wv = document.getElementById('browserWebview');
+  if (wv && wv.canGoBack && wv.canGoBack()) wv.goBack();
+}
+function browserForward() {
+  var wv = document.getElementById('browserWebview');
+  if (wv && wv.canGoForward && wv.canGoForward()) wv.goForward();
+}
+function browserRefresh() {
+  var wv = document.getElementById('browserWebview');
+  if (wv && wv.reload) wv.reload();
+  else if (wv && wv.src) wv.src = wv.src;
+}
+function closeBrowser() {
+  var bv = document.getElementById('browserView');
+  if (bv) bv.style.display = 'none';
+  var wv = document.getElementById('browserWebview');
+  if (wv && wv.loadURL) wv.loadURL('about:blank');
+  else if (wv) wv.src = 'about:blank';
+}
+function openInBrowser(url) {
+  switchView('browser');
+  browserGo(url);
 }
 
 function showContinueButton() {
