@@ -4,55 +4,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StoryForge AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ============================================
-   CSS 变量 - GitHub Dark / Light 风格
+   CSS 变量 - Apple / Cherry Studio 风格
    ============================================ */
 /* ===== Theme Variables ===== */
 /* Light mode (default) */
 :root,[data-theme="light"]{
-  --bg:#ffffff;--bg-base:#ffffff;--bg-secondary:#f8f9fa;--bg-tertiary:#f0f1f3;
-  --sidebar-bg:#f6f8fa;
+  --bg:#ffffff;--bg-base:#ffffff;--bg-secondary:#f7f7f8;--bg-tertiary:#f0f0f2;
+  --sidebar-bg:#f7f7f8;
   --card:#ffffff;--card-solid:#ffffff;
-  --soft:rgba(0,0,0,0.04);--soft-2:rgba(0,0,0,0.08);
-  --text:#1f2328;--accent:#1f2328;
-  --line:#e0e0e0;--line-2:#d0d0d0;
-  --muted:#656d76;--faint:#8c959f;
-  --strong:#1f2328;--strong-text:#ffffff;
-  --danger:#cf222e;--ok:#1a7f37;
-  --shadow:rgba(0,0,0,0.04);--nav-bg:#f6f8fa;
-  --sidebar-hover:#eaeef2;--msg-user:#ffffff;--msg-assistant:#f6f8fa;
-  --input-bg:#ffffff;--scrollbar:#d0d0d0;--scrollbar-hover:#b0b0b0;
+  --soft:rgba(0,0,0,0.03);--soft-2:rgba(0,0,0,0.06);
+  --text:#1d1d1f;--accent:#007aff;
+  --line:rgba(0,0,0,0.08);--line-2:rgba(0,0,0,0.12);
+  --muted:#86868b;--faint:#aeaeb2;
+  --strong:#1d1d1f;--strong-text:#ffffff;
+  --danger:#ff3b30;--ok:#34c759;
+  --shadow:0 1px 3px rgba(0,0,0,0.06);--nav-bg:#f7f7f8;
+  --sidebar-hover:#e8e8ed;--msg-user:#f0f0f2;--msg-assistant:#ffffff;
+  --input-bg:#ffffff;--scrollbar:transparent;--scrollbar-hover:rgba(0,0,0,0.15);
   --page:#ffffff;--grid:rgba(0,0,0,0.02);
   --panel:rgba(255,255,255,0.98);
-  --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
-  --activity-bar-bg:#f6f8fa;--chat-panel-bg:#f6f8fa;--status-bar-bg:#f6f8fa;
+  --radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-xl:18px;
+  --activity-bar-bg:#f7f7f8;--chat-panel-bg:#f7f7f8;--status-bar-bg:#f7f7f8;
   --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
   color-scheme:light;
 }
 
 /* Dark mode */
 [data-theme="dark"]{
-  --bg:#0d1117;--bg-base:#0d1117;--bg-secondary:#161b22;--bg-tertiary:#21262d;
-  --sidebar-bg:#0d1117;
-  --card:#161b22;--card-solid:#161b22;
+  --bg:#1c1c1e;--bg-base:#1c1c1e;--bg-secondary:#2c2c2e;--bg-tertiary:#3a3a3c;
+  --sidebar-bg:#1c1c1e;
+  --card:#2c2c2e;--card-solid:#2c2c2e;
   --soft:rgba(255,255,255,0.04);--soft-2:rgba(255,255,255,0.08);
-  --text:#e6edf3;--accent:#e6edf3;
-  --line:rgba(255,255,255,0.08);--line-2:rgba(255,255,255,0.12);
-  --muted:#8b949e;--faint:#6e7681;
-  --strong:#e6edf3;--strong-text:#0d1117;
-  --danger:#f85149;--ok:#3fb950;
-  --shadow:rgba(0,0,0,0.50);--nav-bg:#0d1117;
-  --sidebar-hover:#161b22;--msg-user:var(--soft-2);--msg-assistant:#161b22;
-  --input-bg:#0d1117;--scrollbar:#30363d;--scrollbar-hover:#484f58;
-  --page:#0d1117;--grid:rgba(255,255,255,0.02);
-  --panel:rgba(22,27,34,0.96);
-  --radius-sm:6px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
-  --activity-bar-bg:#010409;--chat-panel-bg:#0d1117;--status-bar-bg:#010409;
-  --activity-bar-active:var(--strong);--activity-bar-inactive:var(--faint);
+  --text:#f5f5f7;--accent:#0a84ff;
+  --line:rgba(255,255,255,0.1);--line-2:rgba(255,255,255,0.15);
+  --muted:#98989d;--faint:#636366;
+  --strong:#f5f5f7;--strong-text:#1c1c1e;
+  --danger:#ff453a;--ok:#30d158;
+  --shadow:0 1px 3px rgba(0,0,0,0.3);--nav-bg:#1c1c1e;
+  --sidebar-hover:#2c2c2e;--msg-user:#2c2c2e;--msg-assistant:#1c1c1e;
+  --input-bg:#2c2c2e;--scrollbar:transparent;--scrollbar-hover:rgba(255,255,255,0.15);
+  --page:#1c1c1e;--grid:rgba(255,255,255,0.02);
+  --panel:rgba(44,44,46,0.96);
+  --radius-sm:8px;--radius-md:10px;--radius-lg:14px;--radius-xl:18px;
+  --activity-bar-bg:#1c1c1e;--chat-panel-bg:#1c1c1e;--status-bar-bg:#1c1c1e;
+  --activity-bar-active:#0a84ff;--activity-bar-inactive:var(--faint);
+  --accent-green:#30d158;--accent-purple:#bf5af2;--accent-orange:#ff9f0a;
   color-scheme:dark;
 }
 
@@ -62,19 +60,18 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
 body{
-  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
   background:var(--bg-base);color:var(--text);
   font-size:14px;line-height:1.6;font-weight:400;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-  font-feature-settings:'cv01','ss03';
 }
 a{color:var(--accent);text-decoration:none}
 
 /* 滚动条 */
-::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
-::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)}
+::-webkit-scrollbar-thumb{background:var(--scrollbar-hover);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 
 /* ============================================
    主布局 - Trae Solo 四区
@@ -163,21 +160,31 @@ a{color:var(--accent);text-decoration:none}
 
 /* 对话列表 */
 .chat-panel-list{flex:1;overflow-y:auto;padding:0}
+.chat-panel-list:empty{display:none}
 .conv-group-label{
   padding:8px 12px 4px;font-size:10px;font-weight:600;
   color:var(--faint);text-transform:uppercase;letter-spacing:.04em;
 }
+.project-group-header {
+  display:flex;align-items:center;padding:8px 12px 4px;
+  font-size:12px;font-weight:600;color:var(--muted);
+  cursor:default;user-select:none;gap:6px;
+}
 .chat-panel-item{
   display:flex;align-items:center;gap:8px;
-  padding:7px 10px;margin:0 4px;border-radius:var(--radius-sm);cursor:pointer;
-  transition:all .1s;font-size:12px;color:var(--muted);
+  padding:8px 12px;margin:1px 0;border-radius:var(--radius-sm);cursor:pointer;
+  transition:background .15s;font-size:13px;color:var(--text);
 }
-.chat-panel-item:hover{background:var(--soft);color:var(--text)}
-.chat-panel-item.active{background:var(--soft-2);color:var(--text);font-weight:600}
-.chat-panel-item.pinned{border-left:2px solid var(--strong);padding-left:8px}
+.chat-panel-item:hover{background:var(--soft)}
+.chat-panel-item.active{background:var(--accent);color:#ffffff}
+.chat-panel-item.active .conv-time{color:rgba(255,255,255,0.7)}
+.chat-panel-item.active .conv-icon{opacity:.7;color:#ffffff}
+.chat-panel-item.active .conv-actions button{color:rgba(255,255,255,0.7)}
+.chat-panel-item.active .conv-actions button:hover{color:#fff;background:rgba(255,255,255,0.15)}
+.chat-panel-item.pinned{padding-left:12px}
 .chat-panel-item svg.conv-icon{flex-shrink:0;opacity:.4}
 .chat-panel-item .conv-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-panel-item .conv-time{font-size:10px;color:var(--faint);flex-shrink:0;white-space:nowrap}
+.chat-panel-item .conv-time{font-size:11px;color:var(--muted);margin-left:auto;flex-shrink:0}
 .chat-panel-item .conv-actions{
   display:none;gap:2px;align-items:center;flex-shrink:0;
 }
@@ -188,9 +195,9 @@ a{color:var(--accent);text-decoration:none}
   display:flex;align-items:center;justify-content:center;transition:all .1s;
 }
 .chat-panel-item .conv-actions button:hover{background:var(--soft-2);color:var(--text)}
-.chat-panel-item .conv-actions .pin-btn.active{color:var(--strong)}
+.chat-panel-item .conv-actions .pin-btn.active{color:var(--accent)}
 .chat-panel-empty{
-  padding:20px 12px;color:var(--faint);font-size:11px;text-align:center;
+  padding:24px 12px;color:var(--faint);font-size:12px;text-align:center;
   letter-spacing:.02em;
 }
 /* 拖拽文件到聊天区域时的视觉反馈 */
@@ -430,7 +437,7 @@ a{color:var(--accent);text-decoration:none}
 .model-dropdown {
   position: absolute; top: 100%; left: 0; min-width: 200px;
   background: var(--bg-secondary); border: 1px solid var(--line);
-  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  border-radius: var(--radius-md); box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   z-index: 100; overflow: hidden; margin-top: 4px;
 }
 .model-dropdown-list { padding: 4px; max-height: 200px; overflow-y: auto; }
@@ -442,7 +449,7 @@ a{color:var(--accent);text-decoration:none}
 .model-dropdown-item:hover { background: var(--soft); }
 .model-dropdown-item.active { background: var(--soft); color: var(--strong-text); font-weight: 600; }
 .model-dropdown-footer { padding: 6px; border-top: 1px solid var(--line); }
-.chat-messages{flex:1;overflow-y:auto;padding:20px 24px}
+.chat-messages{flex:1;overflow-y:auto;padding:24px 32px}
 .message{display:flex;gap:10px;margin-bottom:20px;max-width:85%;animation:fadeIn .2s;position:relative}
 .message.user{flex-direction:row-reverse;margin-left:auto}
 .message.assistant{margin-right:auto}
@@ -452,9 +459,9 @@ a{color:var(--accent);text-decoration:none}
 }
 .message.user .message-avatar{background:var(--strong);color:var(--strong-text)}
 .message.assistant .message-avatar{background:var(--soft-2);color:var(--muted)}
-.message-body{padding:10px 14px;border-radius:var(--radius-xl);font-size:14px;line-height:1.65;letter-spacing:-0.01em}
-.message.user .message-body{background:var(--msg-user);color:var(--text);border-top-right-radius:var(--radius-sm);border:1px solid var(--line)}
-.message.assistant .message-body{background:var(--msg-assistant);color:var(--text);border-top-left-radius:var(--radius-sm)}
+.message-body{padding:12px 16px;border-radius:var(--radius-lg);font-size:14px;line-height:1.7;letter-spacing:-0.01em}
+.message.user .message-body{background:var(--msg-user);color:var(--text);border-top-right-radius:var(--radius-sm);max-width:80%}
+.message.assistant .message-body{background:transparent;color:var(--text);border-top-left-radius:var(--radius-sm);max-width:95%;padding:4px 0}
 .message-actions{display:flex;opacity:0;transition:opacity .2s;pointer-events:none;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
 .message:hover .message-actions,.assistant-message:hover .message-actions{opacity:1;pointer-events:auto}
 .msg-action-btn{display:inline-flex;align-items:center;justify-content:center;padding:4px 6px;border-radius:var(--radius-sm);border:none;background:none;color:var(--muted);cursor:pointer;transition:all .12s}
@@ -492,9 +499,10 @@ a{color:var(--accent);text-decoration:none}
 .chat-input-wrapper{
   display:flex;gap:8px;align-items:flex-end;
   background:var(--input-bg);border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:10px 14px;transition:border-color .15s,box-shadow .15s;
+  padding:12px 16px;transition:border-color .15s,box-shadow .15s;
+  max-width:800px;width:100%;margin:0 auto;
 }
-.chat-input-wrapper:focus-within{border-color:var(--faint);box-shadow:0 0 0 2px rgba(0,0,0,0.06)}
+.chat-input-wrapper:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,122,255,0.1)}
 .chat-textarea{
   flex:1;background:0 0;border:none;color:var(--text);
   font-size:14px;line-height:1.5;resize:none;outline:0;
@@ -502,12 +510,12 @@ a{color:var(--accent);text-decoration:none}
 }
 .chat-textarea::placeholder{color:var(--faint)}
 .send-btn{
-  width:34px;height:34px;border:none;background:var(--strong);color:var(--strong-text);
-  border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:all .12s;
+  width:36px;height:36px;border:none;background:var(--accent);color:#ffffff;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .2s;
 }
-.send-btn:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.send-btn:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
+.send-btn:hover{opacity:.85;transform:scale(1.05)}
+.send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .send-btn svg{width:15px;height:15px}
 /* 继续生成按钮 */
 .continue-btn{
@@ -576,7 +584,7 @@ a{color:var(--accent);text-decoration:none}
 .empty-state svg{width:40px;height:40px;opacity:.25}
 
 /* ============================================
-   欢迎页 - Codex 风格
+   欢迎页 - Cherry Studio 风格
    ============================================ */
 .welcome-view{
   display:flex;flex-direction:column;align-items:center;
@@ -584,8 +592,8 @@ a{color:var(--accent);text-decoration:none}
   position:relative;
 }
 .welcome-view h1{
-  font-size:32px;font-weight:700;margin-bottom:6px;
-  letter-spacing:-0.03em;line-height:1.1;color:var(--text);
+  font-size:28px;font-weight:600;margin-bottom:8px;
+  letter-spacing:-0.02em;line-height:1.2;color:var(--text);
 }
 .welcome-view .subtitle{
   font-size:14px;color:var(--muted);margin-bottom:40px;
@@ -597,22 +605,15 @@ a{color:var(--accent);text-decoration:none}
   width:100%;max-width:560px;margin-bottom:40px;
 }
 .welcome-suggestion-card{
-  background:rgba(255,255,255,0.03);
+  background:var(--soft);
   border:1px solid var(--line);border-radius:var(--radius-lg);
-  padding:14px 16px;cursor:pointer;transition:all .15s;
+  padding:14px 16px;cursor:pointer;transition:all .2s;
   text-align:left;display:flex;flex-direction:column;gap:4px;
 }
-[data-theme="light"] .welcome-suggestion-card{
-  background:rgba(0,0,0,0.02);
-}
 .welcome-suggestion-card:hover{
-  background:rgba(255,255,255,0.06);border-color:var(--line-2);
+  background:var(--soft-2);border-color:var(--accent);
   transform:translateY(-1px);
-  box-shadow:0 2px 12px rgba(0,0,0,0.15);
-}
-[data-theme="light"] .welcome-suggestion-card:hover{
-  background:rgba(0,0,0,0.04);
-  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  box-shadow:var(--shadow);
 }
 .welcome-suggestion-card .suggestion-icon{
   width:28px;height:28px;border-radius:var(--radius-sm);
@@ -628,16 +629,17 @@ a{color:var(--accent);text-decoration:none}
   font-size:12px;color:var(--muted);line-height:1.4;font-weight:400;
 }
 .welcome-input-area{
-  width:100%;max-width:640px;margin-top:auto;padding-bottom:16px;
+  width:100%;max-width:700px;margin-top:auto;padding-bottom:16px;
 }
 .welcome-input-wrapper{
   display:flex;align-items:center;gap:10px;
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius-xl);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);
   padding:12px 16px;transition:all .2s;
+  box-shadow:var(--shadow);
 }
 .welcome-input-wrapper:focus-within{
-  border-color:var(--faint);
-  box-shadow:0 0 0 2px rgba(0,0,0,0.06);
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,122,255,0.1);
 }
 .welcome-textarea{
   flex:1;background:transparent;border:none;outline:none;
@@ -646,13 +648,13 @@ a{color:var(--accent);text-decoration:none}
 }
 .welcome-textarea::placeholder{color:var(--faint)}
 .welcome-send-btn{
-  width:34px;height:34px;border-radius:10px;border:none;
-  background:var(--strong);color:var(--strong-text);
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:var(--accent);color:#ffffff;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;flex-shrink:0;transition:all .12s;
+  cursor:pointer;flex-shrink:0;transition:all .2s;
 }
-.welcome-send-btn:hover{opacity:.9;transform:scale(1.04)}
-.welcome-send-btn:disabled{opacity:.25;cursor:not-allowed;transform:none}
+.welcome-send-btn:hover{opacity:.85;transform:scale(1.05)}
+.welcome-send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .welcome-send-btn svg{width:16px;height:16px}
 .welcome-hint{font-size:11px;color:var(--faint);margin-top:10px;font-weight:400}
 
@@ -694,7 +696,7 @@ a{color:var(--accent);text-decoration:none}
   left:2px;bottom:2px;background:#fff;border-radius:50%;
   transition:transform .3s;box-shadow:0 1px 3px rgba(0,0,0,.2);
 }
-.toggle-switch input:checked+.toggle-slider{background:var(--strong)}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(18px)}
 
 /* ============================================
@@ -726,7 +728,7 @@ a{color:var(--accent);text-decoration:none}
   cursor:pointer;transition:all .12s;position:relative;max-width:220px;
 }
 .skill-trigger-btn:hover{border-color:var(--text);color:var(--text)}
-.skill-trigger-btn.has-skills{border-color:var(--strong);color:var(--strong)}
+.skill-trigger-btn.has-skills{border-color:var(--accent);color:var(--accent)}
 .skill-trigger-btn .skill-count{
   display:inline-flex;align-items:center;justify-content:center;
   min-width:16px;height:16px;border-radius:8px;
@@ -966,8 +968,8 @@ a{color:var(--accent);text-decoration:none}
 .modal-overlay.show > *{position:relative;z-index:1001}
 .modal-box{
   background:var(--bg-base);border:1px solid var(--line);
-  border-radius:20px;padding:24px;max-width:560px;width:90%;max-height:80vh;
-  overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  border-radius:var(--radius-xl);padding:24px;max-width:560px;width:90%;max-height:80vh;
+  overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);
   position:relative;z-index:1001;
 }
 .modal-box.large{max-width:800px}
@@ -1078,7 +1080,7 @@ a{color:var(--accent);text-decoration:none}
 .tool-call-status.done{color:var(--ok)}
 .tool-call-status.error{color:var(--danger)}
 .thinking-block{margin:6px 0;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--line)}
-.thinking-header{cursor:pointer;padding:8px 12px;background:var(--soft);border-left:3px solid #f0883e;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
+.thinking-header{cursor:pointer;padding:8px 12px;background:var(--soft);border-left:3px solid var(--accent);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;user-select:none;transition:background .15s}
 .thinking-header:hover{background:var(--soft-2)}
 .thinking-toggle{font-size:10px;transition:transform .2s}
 .thinking-block.open .thinking-toggle{transform:rotate(180deg)}
@@ -1107,7 +1109,7 @@ a{color:var(--accent);text-decoration:none}
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--accent, #6366f1);
+  background: var(--accent);
   animation: thinkDotBounce 1.4s ease-in-out infinite both;
 }
 .think-block .think-header .think-dots span:nth-child(2) { animation-delay: 0.16s; }
@@ -1178,9 +1180,9 @@ a{color:var(--accent);text-decoration:none}
   background:rgba(255,255,255,0.06);
 }
 .question-btn.active{
-  background:var(--strong);color:var(--strong-text);
-  border-color:var(--strong);
-  box-shadow:0 1px 4px rgba(255,255,255,0.08);
+  background:var(--accent);color:#ffffff;
+  border-color:var(--accent);
+  box-shadow:0 1px 4px rgba(0,0,0,0.1);
 }
 .question-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .question-btn.selected:not(.active){opacity:.4;text-decoration:line-through}
@@ -1212,12 +1214,12 @@ a{color:var(--accent);text-decoration:none}
 }
 
 /* ============================================
-   Left Sidebar (OpenWrite style)
+   Left Sidebar (Cherry Studio style)
    ============================================ */
 .left-sidebar {
-  width: 240px; min-width: 160px; max-width: 360px;
+  width: 260px; min-width: 200px; max-width: 360px;
   display: flex; flex-direction: column;
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--line);
   user-select: none;
   position: relative;
@@ -1254,7 +1256,7 @@ a{color:var(--accent);text-decoration:none}
   border-radius: 4px;
 }
 .ls-tab:hover { color: var(--text); background: var(--soft); }
-.ls-tab.active { color: var(--text); background: var(--soft); font-weight: 500; }
+.ls-tab.active { color: var(--accent); background: var(--soft-2); font-weight: 500; }
 .left-sidebar-list-area {
   flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
 }
@@ -1350,6 +1352,121 @@ a{color:var(--accent);text-decoration:none}
 }
 .settings-toggle input:checked + .settings-toggle-slider { background: var(--accent); }
 .settings-toggle input:checked + .settings-toggle-slider::before { transform: translateX(18px); }
+
+/* ============================================
+   Cherry Studio Polish
+   ============================================ */
+
+/* Accent glow on focus */
+.chat-input-wrapper:focus-within,
+.welcome-input-wrapper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.1), var(--shadow);
+}
+
+/* Status bar accent dot */
+.status-bar-left::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+/* Left sidebar - Codex-style nav items */
+/* Left sidebar tabs - Cherry Studio style */
+.ls-tab {
+  transition: all .15s;
+}
+.ls-tab:hover { color: var(--text) !important; background: var(--soft) !important; }
+.ls-tab.active { color: var(--accent) !important; background: var(--soft-2) !important; font-weight: 500; }
+
+/* Chat panel items - accent active */
+.chat-panel-item.active {
+  background: var(--accent);
+}
+
+/* Message fade-in animation */
+@keyframes msgSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.message {
+  animation: msgSlideIn .25s ease-out;
+}
+
+/* Welcome suggestion cards - subtle gradient on hover */
+.welcome-suggestion-card {
+  position: relative;
+  overflow: hidden;
+}
+.welcome-suggestion-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background .2s;
+}
+.welcome-suggestion-card:hover::before {
+  background: var(--accent);
+}
+
+/* Input area border-top accent */
+.chat-input-area {
+  position: relative;
+  background: var(--bg-base);
+}
+.chat-input-area::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: 40px; right: 40px;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Suggestion icon - accent color */
+.welcome-suggestion-card:hover .suggestion-icon {
+  background: rgba(0,122,255,0.1);
+  color: var(--accent);
+}
+
+/* Skill count badge - accent */
+.skill-trigger-btn .skill-count {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* Model switcher hover */
+.chat-model-switcher:hover {
+  color: var(--accent);
+}
+
+/* Right panel tabs - accent underline */
+.rp-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Settings nav - accent active */
+.settings-nav-item.active {
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+  background: var(--soft);
+  font-weight: 500;
+}
+
+/* Header action buttons hover */
+.icon-btn:hover {
+  color: var(--accent);
+}
+
+/* Cherry Studio - Global transitions */
+body { transition: background-color 0.3s, color 0.3s; }
+button, input, select, textarea { transition: all 0.15s ease; }
+
 </style>
 </head>
 <body>
@@ -1447,7 +1564,7 @@ a{color:var(--accent);text-decoration:none}
             </div>
             <div>
               <div style="font-size:16px;font-weight:600;color:var(--text)">StoryForge AI</div>
-              <div style="font-size:13px;color:var(--muted)">版本 4.3.0</div>
+              <div style="font-size:13px;color:var(--muted)">版本 4.4.0</div>
             </div>
           </div>
           <div style="margin-top:16px">
@@ -1467,51 +1584,55 @@ a{color:var(--accent);text-decoration:none}
 <div class="app-shell">
 <div class="app-layout">
 <!-- ============================================
-     Left Sidebar (OpenWrite style)
+     Left Sidebar (Cherry Studio style)
      ============================================ -->
 <aside class="left-sidebar" id="leftSidebar">
-  <div class="left-sidebar-header">
-    <div class="left-sidebar-brand">
-      <img src="app-icon.jpg" alt="StoryForge AI" class="left-sidebar-logo-img" style="width:24px;height:24px;border-radius:4px">
-      <span class="left-sidebar-title">StoryForge AI</span>
-    </div>
-    <div class="left-sidebar-actions">
-      <button class="icon-btn-sm" onclick="toggleRightPanel()" title="工作区">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-      </button>
-    </div>
-  </div>
-  <div class="left-sidebar-tabs">
-    <button class="ls-tab active" data-view="chat" onclick="switchView('chat',null,this)">对话</button>
-    <button class="ls-tab" data-view="skills" onclick="switchView('skills',null,this)">技能</button>
-    <button class="ls-tab" data-view="generate" onclick="switchView('generate',null,this)">图片</button>
-    <button class="ls-tab" data-view="browser" onclick="switchView('browser',null,this)">浏览器</button>
-  </div>
-  <div class="left-sidebar-list-area">
-    <div id="sidebarChatList" style="display:flex;flex-direction:column;flex:1;min-height:0">
-      <div class="left-sidebar-list-header">
-        <span>对话列表</span>
-        <div style="display:flex;gap:4px">
-          <button class="icon-btn-sm" onclick="exportAllConversations()" title="导出">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          </button>
-          <button class="icon-btn-sm" onclick="createNewChat()" title="新建对话">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-        </div>
-      </div>
-      <input class="chat-panel-search-input" id="convSearchInput" type="text" placeholder="搜索对话..." oninput="filterConversations(this.value)" style="margin:6px 8px;width:calc(100% - 16px)">
-      <div class="chat-panel-list" id="sidebarConvList"></div>
-    </div>
-  </div>
-  <div class="left-sidebar-footer">
-    <button class="icon-btn-sm" id="darkModeToggle" onclick="toggleDarkMode()" title="切换日间/夜间模式">
-      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  <!-- Top actions -->
+  <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+    <button onclick="createNewChat()" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text);cursor:pointer;font-size:13px;width:100%;font-family:inherit;transition:all .15s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新对话
     </button>
-    <button class="icon-btn-sm" data-view="settings" onclick="openSettingsFullscreen()" title="设置">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.001 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.023-1.25.42-1.51 1z"/></svg>
-      <span style="font-size:12px">设置</span>
+    <div style="position:relative">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="convSearchInput" placeholder="搜索对话..." style="width:100%;padding:7px 12px 7px 32px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text);font-size:12px;outline:none;font-family:inherit;transition:border-color .15s" oninput="filterConversations(this.value)">
+    </div>
+  </div>
+
+  <!-- View tabs - subtle icon row -->
+  <div style="display:flex;gap:2px;padding:0 12px 8px;border-bottom:1px solid var(--line)">
+    <button class="ls-tab active" data-view="chat" onclick="switchView('chat',null,this)" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border:none;background:none;color:var(--muted);font-size:11px;cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:all .15s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      对话
+    </button>
+    <button class="ls-tab" data-view="skills" onclick="switchView('skills',null,this)" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border:none;background:none;color:var(--muted);font-size:11px;cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:all .15s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      技能
+    </button>
+    <button class="ls-tab" data-view="generate" onclick="switchView('generate',null,this)" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border:none;background:none;color:var(--muted);font-size:11px;cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:all .15s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      图片
+    </button>
+    <button class="ls-tab" data-view="browser" onclick="switchView('browser',null,this)" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 0;border:none;background:none;color:var(--muted);font-size:11px;cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:all .15s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      浏览
+    </button>
+  </div>
+
+  <!-- Conversation list -->
+  <div id="sidebarChatList" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+    <div class="chat-panel-list" id="sidebarConvList" style="flex:1;overflow-y:auto;padding:0 8px 8px 8px"></div>
+  </div>
+
+  <!-- Bottom: Actions -->
+  <div style="padding:8px;border-top:1px solid var(--line);display:flex;gap:4px">
+    <button id="darkModeToggle" onclick="toggleDarkMode()" title="切换日间/夜间模式" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:none;border-radius:var(--radius-md);background:none;color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit;flex:1;transition:background .15s" onmouseover="this.style.background='var(--soft)'" onmouseout="this.style.background='none'">
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <button onclick="openSettingsFullscreen()" title="设置" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:none;border-radius:var(--radius-md);background:none;color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit;flex:1;transition:background .15s" onmouseover="this.style.background='var(--soft)'" onmouseout="this.style.background='none'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1.001 1.51 1H21a2 2 0 0 1 0 4h-.09c-.658.023-1.25.42-1.51 1z"/></svg>
+      设置
     </button>
   </div>
   <button id="themeToggle" style="display:none"></button>
@@ -1527,11 +1648,8 @@ a{color:var(--accent);text-decoration:none}
     <!-- 标签栏 -->
     <div class="tabs-bar" id="tabsBar" style="display:none"></div>
     <div class="welcome-view" id="chatWelcome" style="display:flex">
-      <div style="margin-bottom:auto;padding-top:60px">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--faint);margin-bottom:16px;opacity:.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <h1 id="welcomeTitle">今天你想做些什么?</h1>
-        <p class="subtitle" id="welcomeSubtitle">描述你的想法，AI 会帮你完成剧本、分镜和视觉创作</p>
-      </div>
+      <div style="font-size:28px;font-weight:600;color:var(--text);margin-bottom:8px" id="welcomeTitle">我们该做什么?</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:40px" id="welcomeSubtitle">输入你的想法，AI 将为你提供专业帮助</div>
       <!-- 建议卡片 -->
       <div class="welcome-suggestions" id="welcomeSuggestions">
         <div class="welcome-suggestion-card" onclick="fillSuggestion('帮我写一个关于时间旅行的短剧剧本，5集，每集2分钟')">
@@ -3028,7 +3146,6 @@ function renderConvItem(c) {
   var pinned = c.pinned ? ' pinned' : '';
   var pinClass = c.pinned ? ' active' : '';
   var tooltip = escapeHtml(c.full_title || c.title || '新对话');
-  // 如果标题还是默认的"新对话"，尝试显示 full_title 截断
   var displayTitle = c.title || '新对话';
   if ((displayTitle === '新对话' || !displayTitle) && c.full_title) {
     displayTitle = c.full_title.length > 30 ? c.full_title.substring(0, 30) + '...' : c.full_title;
@@ -3052,18 +3169,20 @@ function renderConvItem(c) {
 
 function renderConvList(list) {
   if (list.length === 0) {
-    return '<div class="chat-panel-empty">暂无对话</div>';
+    return '<div class="chat-panel-empty" style="padding:24px 12px;color:var(--faint);font-size:12px;text-align:center">暂无对话</div>';
   }
   // 置顶排最前
   var pinned = list.filter(function(c) { return c.pinned; });
   var unpinned = list.filter(function(c) { return !c.pinned; });
   var html = '';
+
   // 置顶组
   if (pinned.length > 0) {
-    html += '<div class="conv-group-label">置顶</div>';
+    html += '<div class="project-group-header" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> 置顶 <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--faint)">' + pinned.length + '</span></div>';
     pinned.forEach(function(c) { html += renderConvItem(c); });
   }
-  // 未置顶按分组
+
+  // 按时间分组（项目分组结构预留）
   if (unpinned.length > 0 && convSortMode !== 'pinned') {
     var groups = {};
     unpinned.forEach(function(c) {
@@ -3074,11 +3193,11 @@ function renderConvList(list) {
     var groupOrder = ['今天', '昨天', '最近7天', '更早'];
     groupOrder.forEach(function(label) {
       if (!groups[label]) return;
-      html += '<div class="conv-group-label">' + label + '</div>';
+      html += '<div class="project-group-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ' + label + ' <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--faint)">' + groups[label].length + '</span></div>';
       groups[label].forEach(function(c) { html += renderConvItem(c); });
     });
   } else if (unpinned.length > 0) {
-    html += '<div class="conv-group-label">全部</div>';
+    html += '<div class="project-group-header">全部 <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--faint)">' + unpinned.length + '</span></div>';
     unpinned.forEach(function(c) { html += renderConvItem(c); });
   }
   return html;
