@@ -1434,13 +1434,52 @@ const server = http.createServer(async (req, res) => {
             });
           });
         } else {
-          res.write('data: [DONE]\n\n'); res.end();
+          // Auto-continue if content was truncated
+          if (typeof truncatedAt !== 'undefined' && truncatedAt > 0) {
+            const contHistory = (body.history || []).concat([
+              { role: 'user', content: body.message },
+              { role: 'assistant', content: text }
+            ]);
+            const contPrompt = '请从刚才中断的地方继续写，不要重复已有内容，不要加任何说明，直接接着写。';
+            agentChat(contPrompt, body.conversation_id, contHistory, body.files || [], config, body.skills || null, convWorkDir).then(contRes => {
+              let contText = '', contBuf = '';
+              contRes.on('data', (chunk) => {
+                contBuf += chunk.toString();
+                const lines = contBuf.split('\n');
+                contBuf = lines.pop() || '';
+                for (const line of lines) {
+                  if (!line.startsWith('data: ')) continue;
+                  const data = line.slice(6).trim();
+                  if (data === '[DONE]') continue;
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+                      const delta = parsed.choices[0].delta.content;
+                      contText += delta;
+                      res.write(`data: ${JSON.stringify({ type: 'content', text: delta })}\n\n`);
+                    }
+                  } catch(e) {}
+                }
+              });
+              contRes.on('end', () => {
+                fullText += contText;
+                res.write('data: [DONE]\n\n'); res.end();
+              });
+              contRes.on('error', () => {
+                res.write('data: [DONE]\n\n'); res.end();
+              });
+            }).catch(() => {
+              res.write('data: [DONE]\n\n'); res.end();
+            });
+          } else {
+            res.write('data: [DONE]\n\n'); res.end();
+          }
         }
       }
 
       try {
         const llmRes = await agentChat(body.message, body.conversation_id, body.history || [], body.files || [], config, body.skills || null, convWorkDir);
-        let fullText = '', buffer = '';
+        let fullText = '', buffer = '', truncatedAt = 0;
 
         llmRes.on('data', (chunk) => {
           buffer += chunk.toString();
@@ -1464,8 +1503,9 @@ const server = http.createServer(async (req, res) => {
                 if (parsed.choices && parsed.choices[0] && parsed.choices[0].finish_reason) {
                   const reason = parsed.choices[0].finish_reason;
                   if (reason === 'length') {
-                    fullText += '\n\n[内容较长，已截断显示]';
-                    res.write(`data: ${JSON.stringify({ type: 'content', text: '\n\n[内容较长，已截断显示]' })}\n\n`);
+                    // 标记内容被截断，通知前端
+                    truncatedAt = fullText.length;
+                    res.write(`data: ${JSON.stringify({ type: 'truncated', text: '内容被截断，正在自动续写...' })}\n\n`);
                   }
                 }
               } catch(e) {}

@@ -3751,6 +3751,7 @@ function doSendMessage(msg) {
             try {
               var data = JSON.parse(dataStr);
               if (data.type === 'content') { assistantContent += data.text; updateStreamMessage(assistantContent); resetWatchdog(); }
+              if (data.type === 'truncated') { addLog('内容被截断，自动续写中...'); resetWatchdog(); }
               if (data.type === 'tool_calls' && data.calls) { resetWatchdog();
                 toolCallRounds++;
                 // FIX: Force stop if too many tool rounds to prevent infinite loops
