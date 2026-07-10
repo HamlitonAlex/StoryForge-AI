@@ -1,6 +1,6 @@
 {
   "name": "storyforge-ai",
-  "version": "4.7.0",
+  "version": "4.8.0",
   "description": "StoryForge AI - 基于Mx-Shell提示词模板体系的AI短剧创作Agent",
   "main": "main.js",
   "scripts": {
@@ -10,6 +10,9 @@
   },
   "author": "StoryForge AI",
   "license": "MIT",
+  "dependencies": {
+    "docx": "^9.7.1"
+  },
   "devDependencies": {
     "electron": "^33.4.11",
     "electron-builder": "^25.0.0",

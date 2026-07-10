@@ -2585,11 +2585,22 @@ function cleanDisplayContent(text) {
   // Remove TOOL_CALL / TOOL_RESULT blocks
   s = s.replace(/\[TOOL_CALL\][\s\S]*?\[\/TOOL_CALL\]/g, '');
   s = s.replace(/\[TOOL_RESULT\][\s\S]*?\[\/TOOL_RESULT\]/g, '');
+  // Protect think blocks before stripping XML tags
+  var thinkBlocks = [];
+  s = s.replace(/<think[^>]*>[\s\S]*?(<\/think>|$)/gi, function(match) {
+    var idx = thinkBlocks.length;
+    thinkBlocks.push(match);
+    return '___THINK_BLOCK_' + idx + '___';
+  });
   // Remove ALL XML-like tags (open, close, self-closing, with attributes)
-  // This catches <function...>, </function>, <to...>, </to>, <antml:invoke...>, <think...>, etc.
+  // This catches <function...>, </function>, <to...>, </to>, <antml:invoke...>, etc.
   s = s.replace(/<\/?[a-zA-Z][a-zA-Z0-9_]*(?::[a-zA-Z][a-zA-Z0-9_]*)?[^>]*\/?>/g, '');
   // Remove any remaining bare angle brackets that aren't HTML
   s = s.replace(/</g, '\u2039').replace(/>/g, '\u203a');
+  // Restore think blocks
+  for (var i = 0; i < thinkBlocks.length; i++) {
+    s = s.replace('___THINK_BLOCK_' + i + '___', thinkBlocks[i]);
+  }
   // Remove JSON-like tool result objects
   s = s.replace(/\{"ok"\s*:\s*(true|false)[^}]*\}/g, '');
   s = s.replace(/\{"error"[\s\S]*?\}/g, '');
@@ -3619,7 +3630,7 @@ function renderMessage(role, content, files) {
   }
   var actions = '';
   if (!u) {
-    actions = '<div class="message-actions"><button class="msg-action-btn" onclick="copyMessage(this)" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="msg-action-btn" onclick="regenerateMessage()" title="重新生成"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button></div>';
+    actions = '<div class="message-actions"><button class="msg-action-btn" onclick="copyMessage(this)" title="复制"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="msg-action-btn" onclick="regenerateMessage()" title="重新生成"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button><button class="msg-action-btn" onclick="exportMsgToDocx(this)" title="导出DOCX" style="font-size:11px;gap:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span>DOCX</span></button></div>';
   }
   return '<div class="message ' + role + '"><div class="message-avatar">' + av + '</div><div class="message-body">' + filesHtml + body + continueBtn + actions + '</div></div>';
 }
@@ -4242,6 +4253,30 @@ function continueChat() {
       return;
     }
   }
+}
+
+/* 用户选择提问选项后发送消息 */
+function sendUserChoice(choice) {
+  // 禁用所有 question 按钮，防止重复点击
+  var buttons = document.querySelectorAll('.question-dialog button');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].disabled = true;
+    buttons[i].style.opacity = '0.5';
+    buttons[i].style.cursor = 'default';
+  }
+  // 在对话中显示用户选择
+  var mc = document.getElementById('chatMessages');
+  if (mc) {
+    var userMsg = document.createElement('div');
+    userMsg.className = 'message user';
+    userMsg.innerHTML = '<div class="message-avatar" style="background:var(--strong);color:var(--strong-text)">U</div><div class="message-body" style="background:var(--msg-user);color:var(--text);border-top-right-radius:var(--radius-sm);max-width:80%;padding:12px 16px;border-radius:var(--radius-lg);font-size:14px;line-height:1.7">' + escapeHtml(choice) + '</div>';
+    mc.appendChild(userMsg);
+    mc.scrollTop = mc.scrollHeight;
+  }
+  // 将选择发送给后端，触发 AI 继续对话
+  var ta = document.getElementById('chatTextarea');
+  if (ta) { ta.value = choice; }
+  sendMessage();
 }
 
 /* 渲染AI提问的选项按钮 */
@@ -5099,6 +5134,33 @@ function copyMessage(btn) {
       btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
     }, 1500);
   });
+}
+
+function exportMsgToDocx(btn) {
+  var msgDiv = btn.closest('.message');
+  if (!msgDiv) return;
+  var bodyEl = msgDiv.querySelector('.message-body');
+  if (!bodyEl) return;
+  var text = bodyEl.innerText || bodyEl.textContent;
+  var filename = prompt('保存文件名:', '导出文档.docx');
+  if (!filename) return;
+  var workDir = null;
+  var wdEl = document.getElementById('workDirDisplay');
+  if (wdEl && wdEl.textContent && wdEl.textContent !== '未设置工作文件夹') {
+    workDir = wdEl.textContent.trim();
+  }
+  btn.disabled = true;
+  fetch('/api/export-docx', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: text, filename: filename, work_dir: workDir })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    btn.disabled = false;
+    if (data.ok) {
+      showToast('DOCX已导出: ' + (data.path || filename));
+    } else {
+      showToast('导出失败: ' + (data.error || '未知错误'));
+    }
+  }).catch(function(e) { btn.disabled = false; showToast('导出失败: ' + e.message); });
 }
 
 function exportChat() {

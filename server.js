@@ -3,6 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const docx = require('docx');
 
 const PORT = parseInt(process.env.DRAMA_STUDIO_PORT) || 3003;
 
@@ -937,6 +938,52 @@ const server = http.createServer(async (req, res) => {
         }
       } catch(e) {
         return json(res, { success: false, error: '工具执行失败: ' + e.message });
+      }
+    }
+
+    // --- Export DOCX ---
+    if (pathname === '/api/export-docx' && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { content, filename, work_dir } = body;
+        if (!content || !filename) return json(res, { ok: false, error: '缺少 content 或 filename' });
+
+        const targetDir = work_dir || getAllowedBaseDir();
+        const filePath = path.join(targetDir, filename.endsWith('.docx') ? filename : filename + '.docx');
+
+        // Parse markdown to docx paragraphs
+        const lines = content.split('\n');
+        const children = [];
+        for (const line of lines) {
+          if (line.startsWith('### ')) {
+            children.push(new docx.Paragraph({ text: line.slice(4), heading: docx.HeadingLevel.HEADING_3 }));
+          } else if (line.startsWith('## ')) {
+            children.push(new docx.Paragraph({ text: line.slice(3), heading: docx.HeadingLevel.HEADING_2 }));
+          } else if (line.startsWith('# ')) {
+            children.push(new docx.Paragraph({ text: line.slice(2), heading: docx.HeadingLevel.HEADING_1 }));
+          } else if (line.startsWith('- ') || line.startsWith('* ')) {
+            children.push(new docx.Paragraph({ text: line.slice(2), bullet: { level: 0 } }));
+          } else if (/^\d+\.\s/.test(line)) {
+            children.push(new docx.Paragraph({ text: line.replace(/^\d+\.\s/, ''), numbering: { reference: 'default-numbering', level: 0 } }));
+          } else if (line.trim()) {
+            children.push(new docx.Paragraph({ text: line }));
+          }
+        }
+
+        const doc = new docx.Document({
+          numbering: {
+            config: [{ reference: 'default-numbering', levels: [{ level: 0, format: docx.LevelFormat.DECIMAL, text: '%1.', alignment: docx.AlignmentType.START }] }]
+          },
+          sections: [{ properties: {}, children }]
+        });
+
+        const buffer = await docx.Packer.toBuffer(doc);
+        if (!fs.existsSync(path.dirname(filePath))) fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, buffer);
+
+        return json(res, { ok: true, message: 'DOCX已导出: ' + filePath, path: filePath });
+      } catch (e) {
+        return json(res, { ok: false, error: '导出DOCX失败: ' + e.message });
       }
     }
 
