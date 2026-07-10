@@ -44,14 +44,18 @@ function startServer() {
     // 数据目录 - 写到 AppData
     const userDataPath = app.getPath('userData');
     process.env.DRAMA_STUDIO_DATA = path.join(userDataPath, 'data');
+    process.env.DRAMA_STUDIO_BASE = process.env.DRAMA_STUDIO_DATA;
     if (!fs.existsSync(process.env.DRAMA_STUDIO_DATA)) {
       fs.mkdirSync(process.env.DRAMA_STUDIO_DATA, { recursive: true });
     }
     // 执行旧数据迁移
     migrateOldData();
+    console.log('[MAIN] Starting server.js...');
     try {
       require('./server.js');
+      console.log('[MAIN] server.js loaded successfully');
     } catch(e) {
+      console.error('[MAIN] server.js failed:', e.message || e);
       reject(e);
       return;
     }
@@ -222,7 +226,7 @@ ipcMain.handle('delete-image', async (event, fileName) => {
 });
 
 ipcMain.handle('get-version', () => {
-  try { return require('./package.json').version; } catch(e) { return '3.2.0'; }
+  try { return require('./package.json').version; } catch(e) { return '1.14.0'; }
 });
 
 const menu = Menu.buildFromTemplate([
@@ -236,8 +240,8 @@ const menu = Menu.buildFromTemplate([
   ]},
   { label: '帮助', submenu: [
     { label: '关于', click: () => dialog.showMessageBox(mainWindow, {
-      type: 'info', title: '关于', message: 'StoryForge AI v3.1.1',
-      detail: 'Mx-Shell x Mimo', buttons: ['确定']
+      type: 'info', title: '关于', message: 'StoryForge AI v' + (() => { try { return require('./package.json').version; } catch(e) { return '1.14.0'; } })(),
+      detail: '基于Mx-Shell提示词模板体系的AI短剧创作Agent', buttons: ['确定']
     })}
   ]}
 ]);

@@ -798,6 +798,7 @@ function generateImage(prompt, size, config) {
       hostname: url.hostname, port: url.port || 80, path: url.pathname, method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
     };
+    if (config.api_key) opts.headers['Authorization'] = `Bearer ${config.api_key}`;
     const proto = url.protocol === 'https:' ? https : http;
     const req = proto.request(opts, (res) => {
       let data = '';
@@ -1338,6 +1339,8 @@ const server = http.createServer(async (req, res) => {
         if (!res.writableEnded) res.write(': heartbeat\n\n');
       }, 30000);
 
+      let truncatedAt = 0; // 截断标记，finishSSE 需读取
+
       function finishSSE(text, isToolRound) {
         clearInterval(heartbeat);
         if (res.writableEnded) return;
@@ -1479,7 +1482,8 @@ const server = http.createServer(async (req, res) => {
 
       try {
         const llmRes = await agentChat(body.message, body.conversation_id, body.history || [], body.files || [], config, body.skills || null, convWorkDir);
-        let fullText = '', buffer = '', truncatedAt = 0;
+        let fullText = '', buffer = '';
+        truncatedAt = 0;
 
         llmRes.on('data', (chunk) => {
           buffer += chunk.toString();
