@@ -401,7 +401,8 @@ function extractImageFiles(files) {
   return images;
 }
 
-async function agentChat(userMessage, conversationId, history, files, config, selectedSkills) {
+async function agentChat(userMessage, conversationId, history, files, config, selectedSkills, workDir) {
+  const effectiveWorkDir = workDir || getAllowedBaseDir();
   let systemPrompt = `你是"StoryForge AI"的专业剧本创作助手。你的核心职责是**引导式创作**——通过主动提问来帮助用户完善剧本。
 
 ## 核心原则：引导式生成
@@ -555,7 +556,7 @@ async function agentChat(userMessage, conversationId, history, files, config, se
 11. fs_info - 获取文件信息
     args: {"path":"文件路径"}
 
-文件系统工具的操作范围：${getAllowedBaseDir()}
+文件系统工具的操作范围：${effectiveWorkDir}
 注意：
 1. 一次回复中最多调用5个工具，不要批量调用大量工具。
 2. 如果某个工具调用失败，不要反复重试同一个工具，直接告知用户失败原因即可。
@@ -1258,6 +1259,21 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/chat' && req.method === 'POST') {
       const body = JSON.parse(await readBody(req));
       const config = loadConfig();
+
+      // Set per-conversation work directory
+      let convWorkDir = null;
+      if (body.conversation_id) {
+        const convs = loadConversations();
+        const conv = convs.find(c => c.id === body.conversation_id);
+        if (conv && conv.work_dir) {
+          convWorkDir = conv.work_dir;
+          const resolved = path.resolve(convWorkDir);
+          if (!trustedPaths.some(t => path.resolve(t) === resolved)) {
+            trustedPaths.push(resolved);
+          }
+        }
+      }
+
       res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*' });
 
       // 心跳保活：每30秒发送注释行，防止连接被代理/防火墙断开
@@ -1293,7 +1309,7 @@ const server = http.createServer(async (req, res) => {
                 res.end();
               }
             }, 60000);
-            agentChat(followUpPrompt, body.conversation_id, historyForFollowUp, body.files || [], config, body.skills || null).then(llmRes2 => {
+            agentChat(followUpPrompt, body.conversation_id, historyForFollowUp, body.files || [], config, body.skills || null, convWorkDir).then(llmRes2 => {
               let fullText2 = '', buffer2 = '';
               llmRes2.on('data', (chunk) => {
                 buffer2 += chunk.toString();
@@ -1366,7 +1382,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       try {
-        const llmRes = await agentChat(body.message, body.conversation_id, body.history || [], body.files || [], config, body.skills || null);
+        const llmRes = await agentChat(body.message, body.conversation_id, body.history || [], body.files || [], config, body.skills || null, convWorkDir);
         let fullText = '', buffer = '';
 
         llmRes.on('data', (chunk) => {

@@ -1739,6 +1739,11 @@ button, input, select, textarea { transition: all 0.15s ease; }
         <button class="icon-btn" onclick="clearCurrentChat()" title="清空对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>
       <div id="sessionToolCalls" style="display:none;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--bg-secondary);font-size:12px;max-height:120px;overflow-y:auto"></div>
+      <div id="workDirBar" style="display:flex;align-items:center;gap:6px;padding:6px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span id="workDirDisplay" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">未设置工作文件夹</span>
+        <button onclick="pickWorkDir()" style="padding:2px 8px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);cursor:pointer;font-size:11px;flex-shrink:0">选择</button>
+      </div>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input-area">
         <div class="upload-preview" id="uploadPreview" style="display:none"></div>
@@ -3375,6 +3380,8 @@ function refreshChatContent() {
     var modelName = config.model_name || config.model || '模型未配置';
     mm.textContent = modelName;
   }
+  var wdBar = document.getElementById('workDirDisplay');
+  if (wdBar && conv) wdBar.textContent = conv.work_dir || '未设置工作文件夹';
   loadConversationMessages();
 }
 
@@ -3532,6 +3539,30 @@ function deleteConversation(id) {
       if (currentConversationId === id) { currentConversationId = null; chatHistory = []; }
       loadConversations(); refreshChatContent(); renderTabs(); addLog('删除对话');
     }).catch(function (e) { addLog('删除失败: ' + e.message); });
+}
+
+function pickWorkDir() {
+  if (window.electronAPI && window.electronAPI.selectFolder) {
+    window.electronAPI.selectFolder().then(function(dir) {
+      if (!dir || !currentConversationId) return;
+      fetch('/api/conversations/' + currentConversationId, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ work_dir: dir })
+      }).then(function() {
+        document.getElementById('workDirDisplay').textContent = dir;
+        addLog('工作文件夹已设置: ' + dir);
+      });
+    });
+  } else {
+    var dir = prompt('请输入工作文件夹路径:');
+    if (!dir || !currentConversationId) return;
+    fetch('/api/conversations/' + currentConversationId, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ work_dir: dir })
+    }).then(function() {
+      document.getElementById('workDirDisplay').textContent = dir;
+    });
+  }
 }
 
 function loadConversationMessages() {
