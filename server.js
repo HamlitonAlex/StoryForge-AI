@@ -235,7 +235,7 @@ function parseFrontmatter(raw) {
 }
 
 // ==================== LLM API ====================
-function callLLM(messages, config, stream = true) {
+function callLLM(messages, config, stream = true, _retries = 1) {
   return new Promise((resolve, reject) => {
     const url = new URL(config.llm_base_url);
     const body = JSON.stringify({
@@ -268,7 +268,17 @@ function callLLM(messages, config, stream = true) {
       resolve(res);
     });
     req.on('timeout', () => { req.destroy(); reject(new Error('LLM API 请求超时，请重试')); });
-    req.on('error', reject);
+    req.on('error', function(err) {
+      // Auto-retry on connection reset/refused
+      if (_retries > 0 && (err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED' || err.code === 'EPIPE')) {
+        console.log('[LLM] 连接错误(' + err.code + ')，重试中...');
+        setTimeout(function() {
+          callLLM(messages, config, stream, _retries - 1).then(resolve).catch(reject);
+        }, 1000);
+        return;
+      }
+      reject(err);
+    });
     req.write(body);
     req.end();
   });

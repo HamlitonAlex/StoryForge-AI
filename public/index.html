@@ -3656,6 +3656,7 @@ function sendMessage() {
 }
 
 function doSendMessage(msg) {
+  window._retryCount = 0; // Reset retry counter on new send
   /* 先上传待发送的文件 */
   uploadPendingFiles().then(function(uploadedFiles) {
     /* 构建消息内容 */
@@ -3877,6 +3878,24 @@ function doSendMessage(msg) {
       return read();
     }).catch(function (err) {
       if (err.name === 'AbortError') { finishGeneration(assistantContent); assistantContent = ''; return; }
+      // Auto-retry on network errors (ECONNRESET, ECONNREFUSED, ETIMEDOUT)
+      var retryable = ['ECONNRESET','ECONNREFUSED','ETIMEDOUT','ENOTFOUND','EPIPE','SOCKET_HANG_UP','ERR_CONNECTION_RESET'];
+      if (!window._retryCount) window._retryCount = 0;
+      if (retryable.some(function(c){ return err.message && err.message.indexOf(c) >= 0; }) && window._retryCount < 1) {
+        window._retryCount++;
+        var mc = document.getElementById('chatMessages');
+        if (mc) {
+          var retryDiv = document.createElement('div');
+          retryDiv.style.cssText = 'text-align:center;padding:12px;font-size:13px;color:var(--muted)';
+          retryDiv.textContent = '连接中断，正在重试...';
+          mc.appendChild(retryDiv);
+          mc.scrollTop = mc.scrollHeight;
+        }
+        addLog('网络错误(' + err.message + ')，自动重试第' + window._retryCount + '次');
+        setTimeout(function() { doSendMessage(message, files, skills, currentConversationId); }, 1500);
+        return;
+      }
+      window._retryCount = 0;
       finishGeneration(assistantContent || '请求失败: ' + err.message);
       assistantContent = '';
       addLog('请求错误: ' + err.message);
