@@ -19,8 +19,8 @@ function compareVersions(a, b) {
 
 const BASE_DIR = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop', '智能体搭建', 'AI短剧创作系统');
 const SKILLS_DIR = path.join(__dirname, 'skills');
-const USER_SKILLS_DIR = path.join(DATA_DIR, 'user-skills');
 const DATA_DIR = process.env.DRAMA_STUDIO_DATA || path.join(__dirname, 'data');
+const USER_SKILLS_DIR = path.join(DATA_DIR, 'user-skills');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 /* 全局异常捕获，防止进程崩溃 */
