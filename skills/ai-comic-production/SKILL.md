@@ -1,8 +1,6 @@
 ---
-name: "AI漫剧制作模板"
-description: "从零开始制作AI漫剧的完整流程模板，包含剧本准备、角色生成、分镜制作、视频生成、后期调整等全流程。基于抖音博主一人漫剧教学视频整理。"
-source: "OpenWrite"
-type: template
+name: "ai-comic-production"
+description: "AI漫剧制作完整流程模板。从剧本准备、视频风格设定、角色形象生成、分镜制作到视频生成和后期调整的全流程指导。适用于AI漫剧/短视频创作者。"
 ---
 
 # AI漫剧制作模板（从0到1完整流程）
