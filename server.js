@@ -17,7 +17,7 @@ function compareVersions(a, b) {
   return 0;
 }
 
-const BASE_DIR = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop', '智能体搭建', 'AI短剧创作系统');
+const BASE_DIR = process.env.DRAMA_STUDIO_BASE || path.resolve(__dirname, '..');
 const SKILLS_DIR = path.join(__dirname, 'skills');
 const DATA_DIR = process.env.DRAMA_STUDIO_DATA || path.join(__dirname, 'data');
 const USER_SKILLS_DIR = path.join(DATA_DIR, 'user-skills');
@@ -107,6 +107,12 @@ function getAllowedBaseDir() {
 
 // Trusted paths list (in-memory, populated via /api/trust-path)
 let trustedPaths = [];
+// Always trust the legacy data directory
+const LEGACY_BASE = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop', '智能体搭建', 'AI短剧创作系统');
+if (!trustedPaths.includes(LEGACY_BASE)) trustedPaths.push(LEGACY_BASE);
+// Trust the user's Desktop folder for convenient file access
+const DESKTOP_DIR = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop');
+if (!trustedPaths.includes(DESKTOP_DIR)) trustedPaths.push(DESKTOP_DIR);
 
 function validatePath(requestedPath) {
   const base = getAllowedBaseDir();
