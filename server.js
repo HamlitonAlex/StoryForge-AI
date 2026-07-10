@@ -638,14 +638,17 @@ async function executeToolCalls(calls, config) {
       const toolPromise = (async () => { let result;
       switch (call.name) {
         case 'save_file': {
-          const projDir = path.join(BASE_DIR, 'projects', call.args.project_id);
+          const baseDir = getAllowedBaseDir();
+          const projDir = path.join(baseDir, 'projects', call.args.project_id);
           if (!fs.existsSync(projDir)) fs.mkdirSync(projDir, { recursive: true });
-          fs.writeFileSync(path.join(projDir, call.args.filename), call.args.content || '', 'utf-8');
-          result = { ok: true, message: `文件已保存: ${call.args.filename}` };
+          const filePath = path.join(projDir, call.args.filename);
+          fs.writeFileSync(filePath, call.args.content || '', 'utf-8');
+          result = { ok: true, message: `文件已保存: ${filePath}` };
           break;
         }
         case 'read_file': {
-          const fp = path.join(BASE_DIR, 'projects', call.args.project_id, call.args.filename);
+          const baseDir = getAllowedBaseDir();
+          const fp = path.join(baseDir, 'projects', call.args.project_id, call.args.filename);
           if (fs.existsSync(fp)) {
             result = { ok: true, content: fs.readFileSync(fp, 'utf-8') };
           } else {
@@ -654,7 +657,7 @@ async function executeToolCalls(calls, config) {
           break;
         }
         case 'list_files': {
-          const projDir = path.join(BASE_DIR, 'projects', call.args.project_id);
+          const projDir = path.join(getAllowedBaseDir(), 'projects', call.args.project_id);
           if (fs.existsSync(projDir)) {
             result = { ok: true, files: fs.readdirSync(projDir).filter(f => !f.startsWith('.')) };
           } else {
@@ -706,7 +709,7 @@ async function executeToolCalls(calls, config) {
           const dir = path.dirname(validated);
           if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
           fs.writeFileSync(validated, call.args.content || '', 'utf-8');
-          result = { ok: true, message: '文件已写入: ' + call.args.path };
+          result = { ok: true, message: '文件已写入: ' + validated };
           break;
         }
         case 'fs_delete': {
