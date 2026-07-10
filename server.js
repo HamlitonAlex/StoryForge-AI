@@ -19,6 +19,7 @@ function compareVersions(a, b) {
 
 const BASE_DIR = path.join(process.env.USERPROFILE || process.env.HOME, 'Desktop', '智能体搭建', 'AI短剧创作系统');
 const SKILLS_DIR = path.join(__dirname, 'skills');
+const USER_SKILLS_DIR = path.join(DATA_DIR, 'user-skills');
 const DATA_DIR = process.env.DRAMA_STUDIO_DATA || path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
@@ -26,7 +27,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 process.on('uncaughtException', (err) => { console.error('[SERVER] Uncaught:', err.message || err); });
 process.on('unhandledRejection', (reason) => { console.error('[SERVER] Unhandled rejection:', reason); });
 
-[BASE_DIR, SKILLS_DIR, DATA_DIR, PUBLIC_DIR,
+[BASE_DIR, SKILLS_DIR, DATA_DIR, PUBLIC_DIR, USER_SKILLS_DIR,
  path.join(BASE_DIR, 'projects'),
  path.join(BASE_DIR, 'assets'),
  path.join(BASE_DIR, 'assets', '分镜关键帧'),
@@ -178,25 +179,29 @@ function genId() {
 function loadSkills() {
   const skills = [];
   const disabledSkills = loadDisabledSkills();
-  if (!fs.existsSync(SKILLS_DIR)) return skills;
-  const dirs = fs.readdirSync(SKILLS_DIR, { withFileTypes: true });
-  for (const d of dirs) {
-    if (!d.isDirectory()) continue;
-    const skillPath = path.join(SKILLS_DIR, d.name, 'SKILL.md');
-    if (fs.existsSync(skillPath)) {
-      const raw = fs.readFileSync(skillPath, 'utf-8');
-      const fm = parseFrontmatter(raw);
-      skills.push({
-        id: d.name,
-        name: fm.name || d.name,
-        description: fm.description || '',
-        output_description: fm.output_description || '',
-        content: fm.body || raw,
-        dir: d.name,
-        enabled: !disabledSkills.includes(d.name)
-      });
+  function scanDir(dir) {
+    if (!fs.existsSync(dir)) return;
+    const dirs = fs.readdirSync(dir, { withFileTypes: true });
+    for (const d of dirs) {
+      if (!d.isDirectory()) continue;
+      const skillPath = path.join(dir, d.name, 'SKILL.md');
+      if (fs.existsSync(skillPath)) {
+        const raw = fs.readFileSync(skillPath, 'utf-8');
+        const fm = parseFrontmatter(raw);
+        skills.push({
+          id: d.name,
+          name: fm.name || d.name,
+          description: fm.description || '',
+          output_description: fm.output_description || '',
+          content: fm.body || raw,
+          dir: d.name,
+          enabled: !disabledSkills.includes(d.name)
+        });
+      }
     }
   }
+  scanDir(SKILLS_DIR);
+  scanDir(USER_SKILLS_DIR);
   return skills;
 }
 
@@ -940,9 +945,14 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/skills/import' && req.method === 'POST') {
       const body = JSON.parse(await readBody(req));
       if (!body.name || !body.content) return err(res, '缺少 name 或 content 字段', 400);
-      const skillId = body.name.replace(/[^a-zA-Z0-9_\u4e00-\u9fff]/g, '_');
-      const skillDir = path.join(SKILLS_DIR, skillId);
-      if (fs.existsSync(skillDir)) return err(res, `技能目录 ${skillId} 已存在`, 409);
+      const skillId = body.name.replace(/[^a-zA-Z0-9_\u4e00-\u9fff\-]/g, '_');
+      const skillDir = path.join(USER_SKILLS_DIR, skillId);
+      if (fs.existsSync(skillDir)) {
+        // Check if also in builtin
+        const builtinDir = path.join(SKILLS_DIR, skillId);
+        if (fs.existsSync(builtinDir)) return err(res, `技能 ${skillId} 已存在（内置技能）`, 409);
+        return err(res, `技能 ${skillId} 已存在`, 409);
+      }
       fs.mkdirSync(skillDir, { recursive: true });
       fs.writeFileSync(path.join(skillDir, 'SKILL.md'), body.content, 'utf-8');
       return json(res, { ok: true, id: skillId, message: `技能 ${body.name} 导入成功` });
@@ -963,14 +973,22 @@ const server = http.createServer(async (req, res) => {
         return json(res, { ok: true, enabled: body.enabled });
       }
       if (req.method === 'DELETE') {
-        const skillDir = path.join(SKILLS_DIR, id);
-        if (fs.existsSync(skillDir)) {
-          fs.rmSync(skillDir, { recursive: true, force: true });
+        // Try user skills first, then builtin
+        const userDir = path.join(USER_SKILLS_DIR, id);
+        const builtinDir = path.join(SKILLS_DIR, id);
+        if (fs.existsSync(userDir)) {
+          fs.rmSync(userDir, { recursive: true, force: true });
+          const disabled = loadDisabledSkills().filter(d => d !== id);
+          saveDisabledSkills(disabled);
+          return json(res, { ok: true, message: `技能 ${id} 已删除` });
         }
-        // 从 disabled_skills.json 中移除
-        const disabled = loadDisabledSkills().filter(d => d !== id);
-        saveDisabledSkills(disabled);
-        return json(res, { ok: true, message: `技能 ${id} 已删除` });
+        if (fs.existsSync(builtinDir)) {
+          // Builtin skill - just disable, don't delete
+          const disabled = loadDisabledSkills();
+          if (!disabled.includes(id)) { disabled.push(id); saveDisabledSkills(disabled); }
+          return json(res, { ok: true, message: `内置技能 ${id} 已禁用（无法删除）` });
+        }
+        return err(res, '技能不存在', 404);
       }
     }
 
