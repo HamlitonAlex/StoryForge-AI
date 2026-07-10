@@ -1497,6 +1497,10 @@ button, input, select, textarea { transition: all 0.15s ease; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span>通知</span>
       </div>
+      <div class="settings-nav-item" onclick="switchSettingsNav(this,'settingsPageModel')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span>模型管理</span>
+      </div>
       <div class="settings-nav-item" onclick="switchSettingsNav(this,'settingsPageAbout')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span>关于</span>
@@ -1575,6 +1579,39 @@ button, input, select, textarea { transition: all 0.15s ease; }
         <div class="settings-group" style="margin-top:20px">
           <p style="font-size:13px;color:var(--muted);line-height:1.6">StoryForge AI 是一款智能创作助手，支持 AI 对话、文件管理、多技能工作流。</p>
           <p style="font-size:12px;color:var(--faint);margin-top:8px">基于 Electron 构建，支持 Windows 平台。</p>
+        </div>
+      </div>
+
+      <!-- 模型管理 -->
+      <div id="settingsPageModel" class="settings-page-panel" style="display:none">
+        <h2 style="font-size:18px;font-weight:600;color:var(--text);margin:0 0 24px 0">模型管理</h2>
+        <div class="settings-group">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-size:14px;color:var(--muted);margin:0;font-weight:500">模型预设</h3>
+            <button onclick="showAddPresetDialog()" style="padding:6px 14px;border:1px solid var(--accent);border-radius:6px;background:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:500">添加预设</button>
+          </div>
+          <div id="presetList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">暂无模型预设，点击上方按钮添加</div>
+          </div>
+        </div>
+
+        <!-- 添加/编辑预设弹窗 -->
+        <div id="presetDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;background:rgba(0,0,0,0.5);align-items:center;justify-content:center">
+          <div style="background:var(--bg);border-radius:var(--radius-lg);padding:24px;width:460px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+            <h3 id="presetDialogTitle" style="font-size:16px;font-weight:600;color:var(--text);margin:0 0 20px 0">添加模型预设</h3>
+            <div class="settings-row"><label>预设名称</label><input type="text" id="presetName" class="settings-input" placeholder="例如：GPT-4o、Claude Sonnet"></div>
+            <div class="settings-row"><label>API 地址</label><input type="text" id="presetApiBase" class="settings-input" placeholder="https://api.openai.com/v1"></div>
+            <div class="settings-row"><label>API Key</label><input type="password" id="presetApiKey" class="settings-input" placeholder="sk-..."></div>
+            <div class="settings-row"><label>模型名称</label><input type="text" id="presetModelName" class="settings-input" placeholder="gpt-4o"></div>
+            <div class="settings-row"><label>Temperature</label><input type="text" id="presetTemp" class="settings-input" placeholder="0.7"></div>
+            <div class="settings-row"><label>最大Token</label><input type="text" id="presetMaxTokens" class="settings-input" placeholder="32000"></div>
+            <div class="settings-row"><label>上下文窗口</label><input type="text" id="presetContextWindow" class="settings-input" placeholder="200000"></div>
+            <input type="hidden" id="presetEditId" value="">
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+              <button onclick="document.getElementById('presetDialog').style.display='none'" style="padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px">取消</button>
+              <button onclick="savePreset()" style="padding:8px 20px;border:none;border-radius:6px;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:500">保存</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2341,35 +2378,40 @@ function toggleModelDropdown(e) {
 function renderModelDropdown() {
   var list = document.getElementById('modelDropdownList');
   if (!list) return;
-  var models = [];
-  if (config.model_name) models.push({ name: config.model_name, primary: true });
-  // Add from providers
-  try {
-    var providers = JSON.parse(localStorage.getItem('sf-providers') || '[]');
-    providers.forEach(function(p) { if (p.model_name && models.indexOf(p.model_name) === -1) models.push({ name: p.model_name }); });
-  } catch(e) {}
-  var currentModel = config.model_name || '';
-  var html = '';
-  if (models.length === 0) {
-    html = '<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">暂无模型配置</div>';
-  } else {
-    models.forEach(function(m) {
-      var isActive = m.name === currentModel ? ' active' : '';
-      html += '<div class="model-dropdown-item' + isActive + '" onclick="event.stopPropagation();selectModel(\'' + m.name.replace(/'/g, "\\'") + '\')">' +
-        '<span>' + escapeHtml(m.name) + '</span>' +
-        (m.primary ? '<span style="font-size:10px;color:var(--muted)">当前</span>' : '') +
-        '</div>';
-    });
-  }
-  list.innerHTML = html;
+  // Fetch presets from server
+  fetch('/api/model-presets').then(function(r){return r.json();}).then(function(presets){
+    var currentModel = config.model_name || '';
+    var html = '';
+    if (!presets || presets.length === 0) {
+      html = '<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">暂无模型预设，请先添加</div>';
+    } else {
+      presets.forEach(function(p) {
+        var isActive = p.model_name === currentModel ? ' active' : '';
+        html += '<div class="model-dropdown-item' + isActive + '" onclick="event.stopPropagation();switchToPreset(\'' + p.id + '\',\'' + (p.name || p.model_name).replace(/'/g,"\\'") + '\')" style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span>' + escapeHtml(p.name || p.model_name) + '</span>' +
+          '<span style="font-size:10px;color:var(--muted)">' + escapeHtml(p.model_name) + '</span>' +
+          '</div>';
+      });
+    }
+    list.innerHTML = html;
+  }).catch(function(){ list.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted);text-align:center">加载失败</div>'; });
 }
-function selectModel(name) {
-  config.model_name = name;
-  try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
-  document.getElementById('chatModelName').textContent = name;
-  document.getElementById('modelDropdown').style.display = 'none';
-  var meta = document.getElementById('chatModelName');
-  if (meta) meta.textContent = name;
+function switchToPreset(id, displayName) {
+  fetch('/api/model-presets/switch', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id })
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.ok) {
+      config = d.config || config;
+      config.model_name = config.model_name || displayName;
+      document.getElementById('chatModelName').textContent = config.model_name || '模型未配置';
+      document.getElementById('modelDropdown').style.display = 'none';
+      var wm = document.getElementById('welcomeModelName');
+      if (wm) wm.textContent = config.model_name || '未配置';
+      try { localStorage.setItem('sf-config', JSON.stringify(config)); } catch(e) {}
+      addLog('已切换模型: ' + (config.model_name || displayName));
+    }
+  }).catch(function(e){ addLog('切换失败: ' + e.message); });
 }
 function switchToSettingsTab(tabId) {
   var dd = document.getElementById('modelDropdown');
@@ -5592,6 +5634,95 @@ function initResize(handleId, panelId, side) {
     document.addEventListener('mouseup', onUp);
   });
 }
+
+/* ---- 模型预设管理 ---- */
+function showAddPresetDialog() {
+  document.getElementById('presetEditId').value = '';
+  document.getElementById('presetDialogTitle').textContent = '添加模型预设';
+  document.getElementById('presetName').value = '';
+  document.getElementById('presetApiBase').value = '';
+  document.getElementById('presetApiKey').value = '';
+  document.getElementById('presetModelName').value = '';
+  document.getElementById('presetTemp').value = '';
+  document.getElementById('presetMaxTokens').value = '';
+  document.getElementById('presetContextWindow').value = '';
+  document.getElementById('presetDialog').style.display = 'flex';
+}
+function editPreset(id) {
+  fetch('/api/model-presets').then(function(r){return r.json();}).then(function(presets){
+    var p = presets.find(function(x){return x.id === id;});
+    if (!p) return;
+    document.getElementById('presetEditId').value = p.id;
+    document.getElementById('presetDialogTitle').textContent = '编辑模型预设';
+    document.getElementById('presetName').value = p.name || '';
+    document.getElementById('presetApiBase').value = p.api_base || '';
+    document.getElementById('presetApiKey').value = p.api_key || '';
+    document.getElementById('presetModelName').value = p.model_name || '';
+    document.getElementById('presetTemp').value = p.temperature !== undefined ? p.temperature : '';
+    document.getElementById('presetMaxTokens').value = p.max_tokens !== undefined ? p.max_tokens : '';
+    document.getElementById('presetContextWindow').value = p.context_window !== undefined ? p.context_window : '';
+    document.getElementById('presetDialog').style.display = 'flex';
+  });
+}
+function savePreset() {
+  var data = {
+    id: document.getElementById('presetEditId').value || undefined,
+    name: document.getElementById('presetName').value.trim() || document.getElementById('presetModelName').value.trim(),
+    api_base: document.getElementById('presetApiBase').value.trim(),
+    api_key: document.getElementById('presetApiKey').value.trim(),
+    model_name: document.getElementById('presetModelName').value.trim(),
+    temperature: parseFloat(document.getElementById('presetTemp').value) || undefined,
+    max_tokens: parseInt(document.getElementById('presetMaxTokens').value) || undefined,
+    context_window: parseInt(document.getElementById('presetContextWindow').value) || undefined
+  };
+  if (!data.api_base || !data.api_key || !data.model_name) {
+    alert('API地址、Key和模型名称为必填项'); return;
+  }
+  fetch('/api/model-presets', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(function(r){return r.json();}).then(function(){
+    document.getElementById('presetDialog').style.display = 'none';
+    renderPresetList();
+    addLog('模型预设已保存');
+  }).catch(function(e){ alert('保存失败: ' + e.message); });
+}
+function deletePreset(id) {
+  if (!confirm('确定删除这个预设？')) return;
+  fetch('/api/model-presets/' + id, { method: 'DELETE' }).then(function(r){return r.json();}).then(function(){
+    renderPresetList();
+    addLog('预设已删除');
+  });
+}
+function renderPresetList() {
+  var el = document.getElementById('presetList');
+  if (!el) return;
+  fetch('/api/model-presets').then(function(r){return r.json();}).then(function(presets){
+    if (!presets || presets.length === 0) {
+      el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">暂无模型预设，点击上方按钮添加</div>';
+      return;
+    }
+    var html = '';
+    presets.forEach(function(p){
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--line)">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(p.name || p.model_name) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + escapeHtml(p.api_base) + ' &bull; ' + escapeHtml(p.model_name) + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;margin-left:12px">' +
+          '<button onclick="editPreset(\'' + p.id + '\')" style="padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);cursor:pointer;font-size:12px">编辑</button>' +
+          '<button onclick="deletePreset(\'' + p.id + '\')" style="padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:none;color:var(--danger);cursor:pointer;font-size:12px">删除</button>' +
+        '</div></div>';
+    });
+    el.innerHTML = html;
+  });
+}
+// Auto-load presets when settings opens
+var _origOpenSettings = openSettingsFullscreen;
+openSettingsFullscreen = function() {
+  _origOpenSettings();
+  setTimeout(function(){ renderPresetList(); }, 200);
+};
 </script>
 <div id="fsPermissionDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center">
   <div style="background:var(--bg-secondary);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)">

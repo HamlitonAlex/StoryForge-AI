@@ -1005,6 +1005,47 @@ const server = http.createServer(async (req, res) => {
       return json(res, { token: msProvider ? (msProvider.key || msProvider.api_key || '') : '' });
     }
 
+    // --- Model Presets ---
+    const PRESETS_FILE = path.join(DATA_DIR, 'model-presets.json');
+    function loadPresets() {
+      try { return JSON.parse(fs.readFileSync(PRESETS_FILE, 'utf-8')); } catch(e) { return []; }
+    }
+    function savePresets(presets) {
+      fs.writeFileSync(PRESETS_FILE, JSON.stringify(presets, null, 2), 'utf-8');
+    }
+    if (pathname === '/api/model-presets') {
+      if (req.method === 'GET') return json(res, loadPresets());
+      if (req.method === 'POST') {
+        const body = JSON.parse(await readBody(req));
+        const presets = loadPresets();
+        if (body.id) { const idx = presets.findIndex(p => p.id === body.id);
+          if (idx >= 0) presets[idx] = body; else presets.push(body);
+        } else { body.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6); presets.push(body); }
+        savePresets(presets);
+        return json(res, { ok: true, presets });
+      }
+    }
+    if (pathname.match(/^\/api\/model-presets\/switch$/) && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req));
+      const presets = loadPresets();
+      const preset = presets.find(p => p.id === body.id);
+      if (!preset) return err(res, '预设不存在', 404);
+      const cfg = { ...loadConfig(), api_base: preset.api_base, api_key: preset.api_key, model_name: preset.model_name };
+      if (preset.temperature !== undefined) cfg.temperature = preset.temperature;
+      if (preset.max_tokens !== undefined) cfg.max_tokens = preset.max_tokens;
+      if (preset.context_window !== undefined) cfg.context_window = preset.context_window;
+      cfg.llm_base_url = preset.api_base; cfg.model = preset.model_name;
+      saveConfig(cfg);
+      return json(res, { ok: true, config: cfg });
+    }
+    if (pathname.match(/^\/api\/model-presets\/([a-zA-Z0-9_\-]+)$/)) {
+      const id = pathname.split('/').pop();
+      if (req.method === 'DELETE') {
+        let presets = loadPresets(); presets = presets.filter(p => p.id !== id);
+        savePresets(presets); return json(res, { ok: true });
+      }
+    }
+
     // --- Skills ---
     if (pathname === '/api/skills' && req.method === 'GET') {
       return json(res, loadSkills().map(s => ({ id: s.id, name: s.name, description: s.description, output_description: s.output_description, dir: s.dir, enabled: s.enabled })));
