@@ -8,7 +8,7 @@
 :root{--bg:#121212;--bg2:#1a1a1a;--bg3:#252525;--fg:#fff;--fg2:#999;--fg3:#666;--fg4:#444;--accent:#fff;--accent-fg:#121212;--border:#333;--border2:#222;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--radius:16px;--radius-sm:12px;--radius-xs:8px;--shadow:0 4px 24px rgba(0,0,0,0.4);--shadow-sm:0 2px 8px rgba(0,0,0,0.2);--safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom)}
 html.light{--bg:#f5f5f7;--bg2:#fff;--bg3:#f0f0f2;--fg:#121212;--fg2:#666;--fg3:#999;--fg4:#bbb;--accent:#121212;--accent-fg:#fff;--border:#ddd;--border2:#e5e5e7;--shadow:0 4px 24px rgba(0,0,0,0.08);--shadow-sm:0 2px 8px rgba(0,0,0,0.05)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;transition:background 0.3s,color 0.3s}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:var(--fs,14px);line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none;transition:background 0.3s,color 0.3s}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;-webkit-appearance:none;touch-action:manipulation}
 input,textarea,select{font:inherit;color:inherit;background:none;border:none;outline:none;-webkit-appearance:none}
 ::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -290,7 +290,7 @@ input,textarea,select{font:inherit;color:inherit;background:none;border:none;out
 <!-- Chat -->
 <div class="page active" id="pChat">
 <div class="chat-hdr"><button class="hdr-btn" onclick="openDrawer()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button><span class="hdr-title" id="chatTitle">墨炉</span><button class="model-chip" onclick="openModelDropdown()"><span id="modelName">Agens-AI</span><svg width="8" height="5" viewBox="0 0 8 5"><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg></button></div>
-<div class="chat-body" id="chatBody"><div class="empty" id="emptySt"><div class="empty-logo"><img src="logo.png" style="width:100%;height:100%;border-radius:18px;object-fit:cover"></div><div class="empty-t">墨炉</div><div class="empty-s">AI驱动的创作工作台<br>选择模型后即可开始对话</div></div></div>
+<div class="chat-body" id="chatBody"><div class="empty" id="emptySt"><div class="empty-logo"><img src="logo.png" style="width:100%;height:100%;border-radius:18px;object-fit:cover"></div><div class="empty-t">墨炉</div><div class="empty-s">AI驱动的创作工作台<br>选择模型后即可开始对话</div><div class="empty-acts" style="display:flex;gap:10px;margin-top:12px"><button class="empty-btn" onclick="goPage('Profile')">设置昵称</button></div></div></div>
 <div class="input-area" id="inputArea"><div class="input-bar"><button class="i-icon" onclick="openSkillModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg></button><textarea class="i-ta" id="msgInput" rows="1" placeholder="输入你的想法..." oninput="autoH()" onkeydown="onKey(event)"></textarea><button class="i-icon" id="voiceBtn" ontouchstart="startVoice(event)" ontouchend="endVoice(event)" ontouchmove="moveVoice(event)" onmousedown="startVoice(event)" onmouseup="endVoice(event)" style="color:var(--fg4)" title="长按语音输入"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button><button class="i-icon" onclick="toggleFileInput()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><input type="file" id="fileInput" style="display:none" accept=".txt,.md,.json,.pdf" onchange="handleFileSelect(event)"><button class="send disabled" id="sendBtn" onclick="sendMsg()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button></div><div class="i-foot">内容由AI生成，请仔细甄别</div></div>
 </div>
 
@@ -416,7 +416,7 @@ var lang=localStorage.getItem('molu_lang')||'zh';
 var pageStack=['Chat'];
 var quotedMsg=null;
 var touchStartX=0,touchStartY=0,isSwiping=false;
-var APP_VERSION='1.0.0';
+var APP_VERSION='1.0.1';
 
 var I18N={
 zh:{chat:'墨炉',newConv:'新对话',send:'发送',stop:'停止生成',typeMsg:'输入你的想法...',aiFoot:'内容由AI生成，请仔细甄别',settings:'设置',discover:'发现',membership:'会员计划',projects:'项目资产',skills:'墨炉技能',profile:'个人资料',phrases:'常用语',feedback:'意见反馈',model:'模型配置',modelSwitch:'切换模型',selectSkill:'选择技能',about:'关于墨炉',update:'版本更新',logout:'退出登录',theme:'颜色主题',lang:'语言',white:'白墨',black:'黑墨',simplified:'简体中文',back:'返回',save:'保存',cancel:'取消',delete:'删除',confirm:'确定删除？',rename:'重命名',pin:'置顶',unpin:'取消置顶',copy:'复制邀请码',copied:'已复制',loading:'加载中...',empty:'暂无内容',error:'加载失败',network:'网络错误',saved:'已保存',submit:'提交反馈',submitOk:'提交成功，感谢您的反馈！',add:'添加',added:'已添加',removed:'已删除',noSkill:'暂无可用技能',noConv:'暂无会话',noProj:'暂无项目',noPhrase:'暂无常用语',newConvTitle:'新对话',search:'搜索会话',noResult:'无匹配结果',selectProv:'请先选择厂商',fillKey:'请填写API Key',fillAll:'请填写完整',connOk:'连接成功!',connFail:'连接失败:',savedProv:'已保存',switched:'已选择:',defaultSkill:'默认技能',upgrade:'升级功能开发中',newVersion:'发现新版本:',latest:'当前已是最新版本',checkFail:'检查更新失败',copyFail:'复制失败，请手动复制:',suggestion:'建议',bug:'BUG',other:'其他',feedbackHint:'请详细描述您的反馈...',contactHint:'邮箱或手机号',contactLabel:'联系方式（选填）',feedbackType:'反馈类型',feedbackContent:'反馈内容',points:'积分',name:'昵称',bio:'简介',email:'邮箱',nameHint:'请输入昵称',chapter:'章',words:'字',desc:'暂无描述',filter:'分类',featured:'推荐项目',models:'个模型',selectModel:'选择模型厂商，填写API Key后即可使用',apiBase:'API Base URL',apiKey:'API Key',modelName:'模型名称',testConn:'测试连接',saveCfg:'保存配置',fetchModels:'拉取模型列表',customModels:'自定义模型',addCustom:'添加自定义模型',verNum:'V'+APP_VERSION,u303:'墨炉 MoLu V'+APP_VERSION,history:'历史会话',dataSync:'数据同步',exportData:'导出数据',importData:'导入数据',exportOk:'数据已导出',importOk:'导入成功，请刷新页面',importFail:'导入失败：文件格式错误',syncToPC:'手机 → 电脑',syncFromPC:'电脑 → 手机',syncHint:'在同一WiFi下，电脑浏览器访问上方地址即可管理手机端数据',apiConfig:'API配置',data:'数据',help:'帮助',account:'账号',personalize:'个性化',language:'语言',selectFile:'选择文件'},
@@ -771,13 +771,13 @@ swipeArea.addEventListener('touchend',function(){isSwiping=false},{passive:true}
 document.addEventListener('touchstart',function(e){if(!$('drawer').classList.contains('on'))return;touchStartX=e.touches[0].clientX},{passive:true});
 document.addEventListener('touchmove',function(e){if(!$('drawer').classList.contains('on'))return;var dx=e.touches[0].clientX-touchStartX;if(dx<-50){closeDrawer()}},{passive:true});
 
-window.setFontSize=function(s){document.body.style.setProperty('font-size',s+'px','important');document.querySelector('html').style.setProperty('font-size',s+'px','important');localStorage.setItem('molu_fontsize',s);if($('fontSizeVal'))$('fontSizeVal').textContent=s+'px'};
+window.setFontSize=function(s){document.documentElement.style.setProperty('--fs',s+'px');localStorage.setItem('molu_fontsize',s);if($('fontSizeVal'))$('fontSizeVal').textContent=s+'px'};
 // Init
 function init(){
  initAgens();
  selSkills=loadL('molu_sel_skills',[]);
  var t2=localStorage.getItem('molu_t')||'dark';setTheme(t2);
- var fs=localStorage.getItem('molu_fontsize')||'14';setFontSize(fs);$('fontSizeSlider').value=fs;$('fontSizeVal').textContent=fs+'px';
+ var fs=localStorage.getItem('molu_fontsize')||'14';setFontSize(fs);if($('fontSizeSlider'))$('fontSizeSlider').value=fs;if($('fontSizeVal'))$('fontSizeVal').textContent=fs+'px';
  updateModel();
  loadConvs();
  updBtn();
@@ -785,7 +785,7 @@ function init(){
  applyLang();
  try{var rp=sessionStorage.getItem('molu_restore_page');if(rp){pageStack=JSON.parse(rp);sessionStorage.removeItem('molu_restore_page');var rid=sessionStorage.getItem('molu_restore_curId');sessionStorage.removeItem('molu_restore_curId');if(rid)curId=rid;var prev=pageStack[pageStack.length-1];if(prev&&prev!=='Chat'){var ps=document.querySelectorAll('.page');for(var i=0;i<ps.length;i++)ps[i].classList.remove('active');$('p'+prev).classList.add('active');if(prev==='Model')initModelPage();if(prev==='Skills')loadSkillsPage();if(prev==='Discover')loadDiscover();if(prev==='Membership')loadMembership();if(prev==='Profile')loadProfile();if(prev==='Projects')loadProjects();if(prev==='Phrases')loadPhrases();if(prev==='Sync')updateSyncUrl()}if(curId){var c=convs.find(function(x){return x.id===curId});if(c){msgs=c.messages||[];renderMsg();$('chatTitle').textContent=c.title||c.name||'墨炉'}}}}catch(e){}
  var prof=loadL('molu_profile',{name:'用户'});
- $('dName').textContent=prof.name;var pi=getPremiumInfo();$('dPlan').textContent=pi?pi.planLabel:'免费版';
+ $('dName').textContent=prof.name;var pi=getPremiumInfo();$('dPlan').textContent=pi?pi.planLabel:'免费版';if(prof.name==='用户'||!prof.name){goPage('Profile');$('chatTitle').textContent='设置昵称后开始'}
 }
 init();
 })();
